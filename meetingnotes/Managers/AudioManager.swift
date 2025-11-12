@@ -11,13 +11,13 @@ import Combine
 @MainActor
 class AudioManager: NSObject, ObservableObject {
     static let shared = AudioManager()
-    
+
     @Published var transcriptChunks: [TranscriptChunk] = []
     @Published var isRecording = false
     @Published var errorMessage: String?
     @Published var micAudioLevel: Float = 0.0
     @Published var systemAudioLevel: Float = 0.0
-    
+
     private var audioEngine = AVAudioEngine()
     private var micSocketTask: URLSessionWebSocketTask?
     private var systemSocketTask: URLSessionWebSocketTask?
@@ -25,40 +25,40 @@ class AudioManager: NSObject, ObservableObject {
 
     // Unique identifier for the current recording session
     private var sessionID = UUID()
-    
+
     // ProcessTap properties
     private var processTap: ProcessTap?
     private let audioProcessController = AudioProcessController()
     private let permission = AudioRecordingPermission()
-    private let tapQueue = DispatchQueue(label: "io.meetingnotes.audiotap", qos: .userInitiated)
+    private let tapQueue = DispatchQueue(label: "io.audora.audiotap", qos: .userInitiated)
     private var isTapActive = false
     private var isRestartingSystemTap = false
-    
+
     // Add properties near the top, after existing private vars
     private var micRetryCount = 0
     private let maxMicRetries = 3
-    
+
     // Add current interim transcripts per source
     private var currentInterim: [AudioSource: String] = [.mic: "", .system: ""]
-    
+
     // Add ping timers to keep WebSocket connections alive
     private var pingTimers: [AudioSource: Timer] = [:]
     private var cancellables = Set<AnyCancellable>()
-    
+
     // Session refresh timers to prevent 30-minute expiry
     private var sessionRefreshTimers: [AudioSource: Timer] = [:]
-    
+
     // MARK: - Auto-Recording Properties
-    
+
     @Published var isAutoRecordingEnabled = false
     private var audioMonitor: SystemAudioMonitor?
     private var autoStartDelay: Timer?
     private var autoStopDelay: Timer?
     private let startDelayTime: TimeInterval = 0.5  // Delay before auto-start
     private let stopDelayTime: TimeInterval = 3.0   // Delay before auto-stop
-    
+
     // MARK: - Mic Following Properties
-    
+
     @Published var isMicFollowingEnabled = false
     private var micMonitor: MicUsageMonitor?
     private var micFollowStartDelay: Timer?
@@ -79,16 +79,16 @@ class AudioManager: NSObject, ObservableObject {
                                                queue: .main) { [weak self] _ in
             self?.handleAudioEngineConfigurationChange()
         }
-        
+
         // Activate the process controller to start monitoring audio-producing apps
         audioProcessController.activate()
-        
+
         // When the list of running applications changes, check if we need to restart the system audio tap
         NSWorkspace.shared.publisher(for: \.runningApplications)
             .debounce(for: .seconds(1), scheduler: RunLoop.main)
             .sink { [weak self] _ in
                 guard let self, self.isTapActive else { return }
-                
+
                 print("🎤 Running applications changed, checking if tap restart is needed.")
                 Task {
                     await self.restartSystemAudioTapIfNeeded()
@@ -103,7 +103,7 @@ class AudioManager: NSObject, ObservableObject {
 
     func startRecording() {
         print("Starting recording...")
-        
+
         // Bump session ID so any old async callbacks can be ignored
         sessionID = UUID()
 
@@ -138,11 +138,11 @@ class AudioManager: NSObject, ObservableObject {
             }
         }
     }
-    
+
     /// Start recording microphone only (for mic following mode)
     private func startMicrophoneOnlyRecording() {
         print("Starting microphone-only recording...")
-        
+
         // Bump session ID so any old async callbacks can be ignored
         sessionID = UUID()
 
@@ -176,10 +176,10 @@ class AudioManager: NSObject, ObservableObject {
             }
         }
     }
-    
+
     private func stopRecordingInternal() {
         print("Internal cleanup...")
-        
+
         // Stop system audio capture
         if isTapActive {
             self.processTap?.invalidate()
@@ -187,38 +187,38 @@ class AudioManager: NSObject, ObservableObject {
             isTapActive = false
             print("System audio tap invalidated")
         }
-        
+
         // Stop microphone capture
         cleanupAudioEngine()
-        
+
         // Close WebSocket
         micSocketTask?.cancel(with: .normalClosure, reason: nil)
         micSocketTask = nil
         systemSocketTask?.cancel(with: .normalClosure, reason: nil)
         systemSocketTask = nil
-        
+
         // Invalidate ping timers
         pingTimers.values.forEach { $0.invalidate() }
         pingTimers.removeAll()
-        
+
         // Invalidate session refresh timers
         sessionRefreshTimers.values.forEach { $0.invalidate() }
         sessionRefreshTimers.removeAll()
-        
+
         // Reset state
         // (isRecording already cleared in stopRecording)
-        
+
         print("Internal cleanup completed")
     }
-    
+
     private func restartMicrophone() {
         guard isRecording, micRetryCount < maxMicRetries else { return }
-        
+
         print("🔄 Restarting microphone capture (attempt \(micRetryCount + 1))")
         micRetryCount += 1
-        
+
         cleanupAudioEngine()
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             self.startMicrophoneTap()
         }
@@ -227,7 +227,7 @@ class AudioManager: NSObject, ObservableObject {
     /// Starts a microphone tap without creating a new OpenAI connection (used when also capturing system audio)
     private func startMicrophoneTap() {
         print("🎤 Starting microphone tap...")
-        
+
         do {
             let inputNode = audioEngine.inputNode
             let recordingFormat = inputNode.outputFormat(forBus: 0)
@@ -249,30 +249,30 @@ class AudioManager: NSObject, ObservableObject {
 
             inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
                 guard let self = self else { return }
-                
+
                 // Check for invalid buffer
                 guard buffer.frameLength > 0, buffer.floatChannelData != nil else {
                     print("❌ Invalid mic buffer detected - restarting")
                     self.restartMicrophone()
                     return
                 }
-                
+
                 // Calculate audio level for visual indicator
                 if let ch = buffer.floatChannelData?[0] {
                     let frameCount = Int(buffer.frameLength)
                     let samples = UnsafeBufferPointer(start: ch, count: frameCount)
                     let rms = sqrt(samples.map { $0 * $0 }.reduce(0, +) / Float(frameCount))
-                    
+
                     // Update the published audio level on main thread
                     DispatchQueue.main.async {
                         self.micAudioLevel = rms
                         AudioLevelManager.shared.updateMicLevel(rms)
                     }
                 }
-                
+
                 // Track activity for mic following mode
                 self.activityTracker?.onAudioBuffer(buffer)
-                
+
                 self.processAudioBuffer(buffer, converter: converter, targetFormat: targetFormat, source: .mic)
             }
 
@@ -281,39 +281,39 @@ class AudioManager: NSObject, ObservableObject {
             connectToOpenAIRealtime(source: .mic)
             print("✅ Microphone tap started successfully")
             micRetryCount = 0  // Reset on success
-            
+
         } catch {
             print("❌ Failed to start microphone tap: \(error)")
             self.restartMicrophone()
         }
     }
-    
+
     private func cleanupAudioEngine() {
         print("🧹 Cleaning up audio engine...")
-        
+
         // Stop the engine first
         if audioEngine.isRunning {
             audioEngine.stop()
             print("⏹️ Audio engine stopped")
         }
-        
+
         // Remove any existing taps on the input node
         let inputNode = audioEngine.inputNode
         inputNode.removeTap(onBus: 0)
         print("🔇 Input tap removed")
-        
+
         // Reset the audio engine - this removes all connections and taps
         audioEngine.reset()
         print("🔄 Audio engine reset")
-        
+
         // Create a fresh audio engine to ensure clean state
         audioEngine = AVAudioEngine()
         print("✨ Fresh audio engine created")
     }
-    
+
     private func startSystemAudioTap(isRestart: Bool = false) async {
         print(isRestart ? "🎧 Restarting system audio tap logic..." : "🎧 Starting system audio tap for the first time...")
-        
+
         if !isRestart {
             guard await checkSystemAudioPermissions() else {
                 let errorMsg = "System audio recording permission denied."
@@ -322,18 +322,18 @@ class AudioManager: NSObject, ObservableObject {
                 return
             }
         }
-        
+
         // Get all running processes that are producing audio
         let allProcessObjectIDs = audioProcessController.processes.map { $0.objectID }
         if allProcessObjectIDs.isEmpty {
             print("⚠️ No audio-producing processes found. System audio tap might not capture anything.")
         }
-        
+
         // Configure the tap for system-wide audio
         let target = TapTarget.systemAudio(processObjectIDs: allProcessObjectIDs)
         let newTap = ProcessTap(target: target)
         newTap.activate()
-        
+
         // Check for activation errors
         if let tapError = newTap.errorMessage {
             let errorMsg = "Failed to activate system audio tap: \(tapError)"
@@ -342,24 +342,24 @@ class AudioManager: NSObject, ObservableObject {
             if !isRestart { stopRecording() }
             return
         }
-        
+
         self.processTap = newTap
         self.isTapActive = true
-        
+
         // Start receiving audio data from the tap
         do {
             try startTapIO(newTap)
-            
+
             if !isRestart {
                 connectToOpenAIRealtime(source: .system)
                 self.isRecording = true
                 AudioLevelManager.shared.updateRecordingState(true)
-                
+
                 // Start audio monitoring now that we have system audio access
                 self.startAudioMonitoringIfNeeded()
             }
             print("✅ System audio tap started successfully (isRestart: \(isRestart))")
-            
+
         } catch {
             let errorMsg = "Failed to start system audio tap IO: \(error.localizedDescription)"
             print("❌ \(errorMsg)")
@@ -369,17 +369,17 @@ class AudioManager: NSObject, ObservableObject {
             if !isRestart { stopRecording() }
         }
     }
-    
+
     private func restartSystemAudioTapIfNeeded() async {
         let newProcessObjectIDs = Set(audioProcessController.processes.map { $0.objectID })
         let currentProcessObjectIDs: Set<AudioObjectID>
-        
+
         if case .systemAudio(let processObjectIDs) = self.processTap?.target {
             currentProcessObjectIDs = Set(processObjectIDs)
         } else {
             currentProcessObjectIDs = []
         }
-        
+
         if newProcessObjectIDs != currentProcessObjectIDs {
             print("Process list has changed. Restarting system audio tap.")
             await restartSystemAudioTap()
@@ -395,10 +395,10 @@ class AudioManager: NSObject, ObservableObject {
             print("Recording was stopped, aborting tap restart.")
             return
         }
-        
+
         isRestartingSystemTap = true
         defer { isRestartingSystemTap = false }
-        
+
         // 1. Invalidate existing tap
         if isTapActive {
             processTap?.invalidate()
@@ -406,10 +406,10 @@ class AudioManager: NSObject, ObservableObject {
             isTapActive = false
             print("System audio tap invalidated for restart.")
         }
-        
+
         // A small delay to let things settle.
         try? await Task.sleep(for: .milliseconds(250))
-        
+
         guard self.isRecording else {
             print("Recording was stopped during tap restart. Aborting.")
             return
@@ -424,9 +424,9 @@ class AudioManager: NSObject, ObservableObject {
         if permission.status == .authorized {
             return true
         }
-        
+
         permission.request()
-        
+
         // Poll for a short time to see if permission is granted
         for _ in 0..<10 {
             if permission.status == .authorized {
@@ -434,10 +434,10 @@ class AudioManager: NSObject, ObservableObject {
             }
             try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
         }
-        
+
         return permission.status == .authorized
     }
-    
+
     private func startTapIO(_ tap: ProcessTap) throws {
         guard var streamDescription = tap.tapStreamDescription else {
             throw NSError(domain: "AudioManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to get audio format from tap."])
@@ -461,22 +461,22 @@ class AudioManager: NSObject, ObservableObject {
             guard let converter = AVAudioConverter(from: format, to: targetFormat) else {
                 return
             }
-            
+
             // Calculate audio level for visual indicator
             if let ch = buffer.floatChannelData?[0] {
                 let frameCount = Int(buffer.frameLength)
                 let samples = UnsafeBufferPointer(start: ch, count: frameCount)
                 let rms = sqrt(samples.map { $0 * $0 }.reduce(0, +) / Float(frameCount))
-                
+
                 // Update the published audio level on main thread
                 DispatchQueue.main.async {
                     self.systemAudioLevel = rms
                     AudioLevelManager.shared.updateSystemLevel(rms)
                 }
             }
-            
+
             self.processAudioBuffer(buffer, converter: converter, targetFormat: targetFormat, source: .system)
-            
+
         } invalidationHandler: { [weak self] _ in
             guard let self else { return }
             print("Audio tap was invalidated.")
@@ -491,19 +491,19 @@ class AudioManager: NSObject, ObservableObject {
             }
         }
     }
-    
+
     func stopRecording() {
         // Immediately mark as not recording to prevent stale callbacks
         self.isRecording = false
         AudioLevelManager.shared.updateRecordingState(false)
         print("Stopping recording...")
-        
+
         // Reset audio levels
         micAudioLevel = 0.0
         systemAudioLevel = 0.0
         AudioLevelManager.shared.updateMicLevel(0.0)
         AudioLevelManager.shared.updateSystemLevel(0.0)
-        
+
         // Stop system audio capture
         if isTapActive {
             self.processTap?.invalidate()
@@ -511,65 +511,65 @@ class AudioManager: NSObject, ObservableObject {
             isTapActive = false
             print("System audio tap invalidated")
         }
-        
+
         // Stop microphone capture
         cleanupAudioEngine()
         micRetryCount = 0
-        
+
         // Close WebSocket
         micSocketTask?.cancel(with: .normalClosure, reason: nil)
         micSocketTask = nil
         systemSocketTask?.cancel(with: .normalClosure, reason: nil)
         systemSocketTask = nil
-        
+
         // Invalidate ping timers
         pingTimers.values.forEach { $0.invalidate() }
         pingTimers.removeAll()
-        
+
         // Invalidate session refresh timers
         sessionRefreshTimers.values.forEach { $0.invalidate() }
         sessionRefreshTimers.removeAll()
-        
+
         // Clean up mic following state
         if isRecordingDueToMicFollowing {
             isRecordingDueToMicFollowing = false
             stopSilenceProbeTimer()
             activityTracker = nil
         }
-        
+
         print("Recording stopped")
     }
-    
+
     private func processAudioBuffer(_ buffer: AVAudioPCMBuffer, converter: AVAudioConverter, targetFormat: AVAudioFormat, source: AudioSource) {
         let processBuffer = buffer
-        
+
         // Convert to target format (24kHz int16 mono) in a single step – AVAudioConverter will handle resampling and downmixing
         let outputFrameCapacity = AVAudioFrameCount(Double(processBuffer.frameLength) * targetFormat.sampleRate / processBuffer.format.sampleRate)
         guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: outputFrameCapacity) else {
             return
         }
-        
+
         var error: NSError?
         let status = converter.convert(to: outputBuffer, error: &error) { _, outStatus in
             outStatus.pointee = .haveData
             return processBuffer
         }
-        
+
         guard status == .haveData, error == nil else {
             return
         }
-        
+
         // Convert to Data for OpenAI
         guard let channelData = outputBuffer.int16ChannelData?[0] else {
             return
         }
-        
+
         let frameCount = Int(outputBuffer.frameLength)
         let data = Data(bytes: channelData, count: frameCount * 2)
-        
+
         sendAudioData(data, source: source)
     }
-    
+
     private func connectToOpenAIRealtime(source: AudioSource) {
         guard let key = KeychainHelper.shared.getAPIKey(), !key.isEmpty else {
             let errorMsg = ErrorMessage.noAPIKey
@@ -586,10 +586,10 @@ class AudioManager: NSObject, ObservableObject {
         request.addValue("realtime=v1", forHTTPHeaderField: "OpenAI-Beta")
 
         let task = session.webSocketTask(with: request)
-        
+
         // Add connection monitoring
         task.resume()
-        
+
         // Set up ping timer to keep connection alive
         pingTimers[source]?.invalidate()
         let pingTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { [weak self] _ in
@@ -605,7 +605,7 @@ class AudioManager: NSObject, ObservableObject {
             }
         }
         pingTimers[source] = pingTimer
-        
+
         // Set up session refresh timer to prevent 30-minute expiry (refresh after 28 minutes)
         sessionRefreshTimers[source]?.invalidate()
         let sessionRefreshTimer = Timer.scheduledTimer(withTimeInterval: 28 * 60.0, repeats: false) { [weak self] _ in
@@ -614,7 +614,7 @@ class AudioManager: NSObject, ObservableObject {
             self.connectToOpenAIRealtime(source: source)
         }
         sessionRefreshTimers[source] = sessionRefreshTimer
-        
+
         let thisSession = sessionID
         // Monitor connection state (ignore if session changed or recording stopped)
         DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self, weak task] in
@@ -708,10 +708,10 @@ class AudioManager: NSObject, ObservableObject {
 
                 let errorMsg = self.handleWebSocketError(error, source: source)
                 print("❌ Receive error (\(source)): \(error)")
-                
+
                 // Check if this is a session expiry - if so, don't show as persistent error
                 let isSessionExpiry = errorMsg == ErrorMessage.sessionExpired
-                
+
                 if isSessionExpiry {
                     // For session expiry, show temporary message
                     DispatchQueue.main.async {
@@ -727,7 +727,7 @@ class AudioManager: NSObject, ObservableObject {
                     DispatchQueue.main.async {
                         self.errorMessage = errorMsg
                     }
-                    
+
                     // Only attempt reconnect for network errors, not API errors
                     if ErrorHandler.shared.shouldRetry(error) {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
@@ -739,7 +739,7 @@ class AudioManager: NSObject, ObservableObject {
             }
         }
     }
-    
+
     private func handleWebSocketError(_ error: Error, source: AudioSource) -> String {
         // Check for session expiry in error description first
         let errorDescription = error.localizedDescription.lowercased()
@@ -754,16 +754,16 @@ class AudioManager: NSObject, ObservableObject {
             // Return session expired message but don't stop recording
             return ErrorMessage.sessionExpired
         }
-        
+
         // Check for WebSocket close codes
         if let closeCode = (error as NSError?)?.userInfo["closeCode"] as? Int {
             return ErrorHandler.shared.handleWebSocketCloseCode(closeCode)
         }
-        
+
         // Use centralized error handler for all other errors
         return ErrorHandler.shared.handleError(error)
     }
-    
+
 
 
     private func parseRealtimeEvent(_ text: String, source: AudioSource) {
@@ -853,7 +853,7 @@ class AudioManager: NSObject, ObservableObject {
         }
 
         guard let type = json["type"] as? String else { return }
-      
+
         // Check for general failure status in any event
         if let status = json["status"] as? String, status == "failed" {
             let itemId = json["item_id"] as? String ?? json["id"] as? String ?? "unknown"
@@ -896,7 +896,7 @@ class AudioManager: NSObject, ObservableObject {
                         isFinal: false
                     )
                     self.transcriptChunks.append(chunk)
-                    
+
                     // Track transcript activity for mic following
                     self.activityTracker?.onTranscriptActivity()
                 }
@@ -917,7 +917,7 @@ class AudioManager: NSObject, ObservableObject {
                         isFinal: true
                     )
                     self.transcriptChunks.append(chunk)
-                    
+
                     // Track transcript activity for mic following
                     self.activityTracker?.onTranscriptActivity()
 
@@ -957,7 +957,7 @@ class AudioManager: NSObject, ObservableObject {
                        let remaining = limit["remaining"] as? Int,
                        let total = limit["limit"] as? Int {
                         print("📊 Rate limit (\(source)) - \(name): \(remaining)/\(total)")
-                        
+
                         // Warn when approaching limits
                         if name == "tokens" && remaining < 1000 {
                             print("⚠️ Warning: Low token balance remaining: \(remaining)")
@@ -977,7 +977,7 @@ class AudioManager: NSObject, ObservableObject {
 
         let base64 = data.base64EncodedString()
         let message: [String: Any] = ["type": "input_audio_buffer.append", "audio": base64]
-        
+
         let thisSession = self.sessionID
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: message)
@@ -998,14 +998,14 @@ class AudioManager: NSObject, ObservableObject {
             print("❌ JSON send error")
         }
     }
-    
+
     private func handleAudioEngineConfigurationChange() {
         print("🔔 Audio engine configuration changed - restarting mic")
         restartMicrophone()
     }
-    
+
     // MARK: - Auto-Recording Methods
-    
+
     /// Enable automatic recording when other apps use audio
     /// Note: Monitoring will start only after the first recording session
     /// to avoid requesting system audio permissions prematurely
@@ -1014,10 +1014,10 @@ class AudioManager: NSObject, ObservableObject {
             print("ℹ️ Auto-recording already enabled")
             return
         }
-        
+
         print("🎯 Enabling auto-recording...")
         isAutoRecordingEnabled = true
-        
+
         // Create monitor but don't start it yet
         audioMonitor = SystemAudioMonitor()
         audioMonitor?.onAudioStateChanged = { [weak self] state in
@@ -1025,17 +1025,17 @@ class AudioManager: NSObject, ObservableObject {
                 self?.handleSystemAudioStateChange(state)
             }
         }
-        
+
         print("✅ Auto-recording enabled - monitoring will start after first recording")
     }
-    
+
     /// Start system audio monitoring (called after first recording begins)
     private func startAudioMonitoringIfNeeded() {
         guard isAutoRecordingEnabled, let monitor = audioMonitor else { return }
-        
+
         // Check if already monitoring
         guard !monitor.isMonitoring else { return }
-        
+
         print("🎧 Starting audio state monitoring...")
         do {
             try monitor.startMonitoring()
@@ -1045,30 +1045,30 @@ class AudioManager: NSObject, ObservableObject {
             errorMessage = "Failed to start audio monitoring: \(error.localizedDescription)"
         }
     }
-    
+
     /// Disable automatic recording
     func disableAutoRecording() {
         guard isAutoRecordingEnabled else {
             print("ℹ️ Auto-recording already disabled")
             return
         }
-        
+
         print("🛑 Disabling auto-recording...")
-        
+
         // Stop monitoring
         audioMonitor?.stopMonitoring()
         audioMonitor = nil
-        
+
         // Cancel any pending timers
         autoStartDelay?.invalidate()
         autoStartDelay = nil
         autoStopDelay?.invalidate()
         autoStopDelay = nil
-        
+
         isAutoRecordingEnabled = false
         print("✅ Auto-recording disabled")
     }
-    
+
     /// Handle system audio state changes
     private func handleSystemAudioStateChange(_ state: SystemAudioMonitor.AudioState) {
         switch state {
@@ -1080,27 +1080,27 @@ class AudioManager: NSObject, ObservableObject {
             handleOtherAppStoppedAudio()
         }
     }
-    
+
     /// When another app starts using audio → Start recording after brief delay
     private func handleOtherAppStartedAudio() {
         print("🎵 Detected: Another app is using audio")
-        
+
         // Cancel any pending stop
         autoStopDelay?.invalidate()
         autoStopDelay = nil
-        
+
         // If already recording, do nothing
         guard !isRecording else {
             print("ℹ️ Already recording")
             return
         }
-        
+
         // Start recording after brief delay to avoid false positives
         print("⏱️ Will start recording in \(startDelayTime)s...")
         autoStartDelay?.invalidate()
         autoStartDelay = Timer.scheduledTimer(withTimeInterval: startDelayTime, repeats: false) { [weak self] _ in
             guard let self = self, self.isAutoRecordingEnabled else { return }
-            
+
             // Double-check audio is still active
             if self.audioMonitor?.audioState == .active && !self.isRecording {
                 print("🎙️ Auto-starting recording...")
@@ -1108,27 +1108,27 @@ class AudioManager: NSObject, ObservableObject {
             }
         }
     }
-    
+
     /// When other apps stop using audio → Stop recording after delay
     private func handleOtherAppStoppedAudio() {
         print("🔇 Detected: Other apps stopped using audio")
-        
+
         // Cancel any pending start
         autoStartDelay?.invalidate()
         autoStartDelay = nil
-        
+
         // If not recording, do nothing
         guard isRecording else {
             print("ℹ️ Not recording")
             return
         }
-        
+
         // Stop recording after delay
         print("⏱️ Will stop recording in \(stopDelayTime)s...")
         autoStopDelay?.invalidate()
         autoStopDelay = Timer.scheduledTimer(withTimeInterval: stopDelayTime, repeats: false) { [weak self] _ in
             guard let self = self, self.isAutoRecordingEnabled else { return }
-            
+
             // Double-check audio is still inactive
             if self.audioMonitor?.audioState == .inactive && self.isRecording {
                 print("⏹️ Auto-stopping recording...")
@@ -1136,19 +1136,19 @@ class AudioManager: NSObject, ObservableObject {
             }
         }
     }
-    
+
     // MARK: - Mic Following Methods
-    
+
     /// Enable mic following mode - record only when other apps are using the microphone
     func enableMicFollowing() {
         guard !isMicFollowingEnabled else {
             print("ℹ️ Mic following already enabled")
             return
         }
-        
+
         print("🎯 Enabling mic following mode...")
         isMicFollowingEnabled = true
-        
+
         // Create and start mic monitor
         micMonitor = MicUsageMonitor()
         micMonitor?.onMicStateChanged = { [weak self] state in
@@ -1156,7 +1156,7 @@ class AudioManager: NSObject, ObservableObject {
                 self?.handleMicUsageStateChange(state)
             }
         }
-        
+
         do {
             try micMonitor?.startMonitoring()
             print("✅ Mic following enabled - will record when other apps use microphone")
@@ -1167,39 +1167,39 @@ class AudioManager: NSObject, ObservableObject {
             micMonitor = nil
         }
     }
-    
+
     /// Disable mic following mode
     func disableMicFollowing() {
         guard isMicFollowingEnabled else {
             print("ℹ️ Mic following already disabled")
             return
         }
-        
+
         print("🛑 Disabling mic following mode...")
-        
+
         // Stop monitoring
         micMonitor?.stopMonitoring()
         micMonitor = nil
-        
+
         // Cancel any pending timers
         micFollowStartDelay?.invalidate()
         micFollowStartDelay = nil
         stopSilenceProbeTimer()
-        
+
         // Cleanup activity tracker
         activityTracker = nil
-        
+
         // Stop recording if active and due to mic following
         if isRecording && isRecordingDueToMicFollowing {
             print("⏹️ Stopping recording due to mic following disable")
             isRecordingDueToMicFollowing = false
             stopRecording()
         }
-        
+
         isMicFollowingEnabled = false
         print("✅ Mic following disabled")
     }
-    
+
     /// Handle microphone usage state changes
     private func handleMicUsageStateChange(_ state: MicUsageMonitor.MicState) {
         switch state {
@@ -1211,63 +1211,63 @@ class AudioManager: NSObject, ObservableObject {
             handleOtherAppStoppedMic()
         }
     }
-    
+
     /// When another app starts using the mic → Start recording after brief delay
     private func handleOtherAppStartedMic() {
         print("🎤 Detected: Another app is using the microphone")
-        
+
         // Cancel any pending stop
         micFollowStopDelay?.invalidate()
         micFollowStopDelay = nil
-        
+
         // If already recording, do nothing
         guard !isRecording else {
             print("ℹ️ Already recording")
             return
         }
-        
+
         // Start recording after brief delay to avoid false positives
         print("⏱️ Will start recording in \(micFollowStartDelayTime)s...")
         micFollowStartDelay?.invalidate()
         micFollowStartDelay = Timer.scheduledTimer(withTimeInterval: micFollowStartDelayTime, repeats: false) { [weak self] _ in
             guard let self = self, self.isMicFollowingEnabled else { return }
-            
+
             // Double-check mic is still active
             if self.micMonitor?.micState == .active && !self.isRecording {
                 print("🎙️ Auto-starting recording (mic following)...")
                 self.isRecordingDueToMicFollowing = true
-                
+
                 // Create activity tracker
                 self.activityTracker = ActivityTracker()
-                
+
                 // Create new transcription session for mic following
                 self.createMicFollowingSession()
-                
+
                 self.startMicrophoneOnlyRecording()
-                
+
                 // Start silence detection probe
                 self.startSilenceProbeTimer()
             }
         }
     }
-    
+
     /// Start silence detection probe timer
     private func startSilenceProbeTimer() {
         silenceProbeTimer?.invalidate()
-        
+
         print("🔄 Starting silence detection probe...")
         silenceProbeTimer = Timer.scheduledTimer(withTimeInterval: probeInterval, repeats: true) { [weak self] _ in
             self?.probeForSilenceAndCheck()
         }
     }
-    
+
     /// Stop the silence probe timer
     private func stopSilenceProbeTimer() {
         silenceProbeTimer?.invalidate()
         silenceProbeTimer = nil
         print("🛑 Stopped silence detection probe")
     }
-    
+
     /// Probe: Check for silence, then verify if other apps still using mic
     private func probeForSilenceAndCheck() {
         guard let monitor = micMonitor, let tracker = activityTracker else {
@@ -1278,18 +1278,18 @@ class AudioManager: NSObject, ObservableObject {
             print("⚠️ Probe skipped: not recording or not due to mic following")
             return
         }
-        
+
         // 1. Check if silent for configured window
         let idleFor = tracker.secondsSinceLastActivity()
         print("🔍 Probe check: idle for \(String(format: "%.1f", idleFor))s (threshold: \(silenceWindow)s)")
-        
+
         if idleFor < silenceWindow {
             // Still active, continue recording
             return
         }
-        
+
         print("🔇 Silence detected for \(String(format: "%.1f", idleFor))s - probing...")
-        
+
         // 2. Completely stop our audio engine to clear mic usage
         let wasRunning = audioEngine.isRunning
         if wasRunning {
@@ -1298,14 +1298,14 @@ class AudioManager: NSObject, ObservableObject {
             audioEngine.inputNode.removeTap(onBus: 0)
             print("⏸️ Stopped audio engine for probe")
         }
-        
+
         // 3. After brief pause, check if anyone else still using mic
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             guard let self = self else { return }
-            
+
             let someoneElseUsing = monitor.currentIsRunningSomewhere()
             print("🔍 Probe result: someoneElseUsing = \(someoneElseUsing)")
-            
+
             if someoneElseUsing {
                 // Others still active -> restart recording
                 print("✅ Other apps still using mic, restarting recording")
@@ -1322,19 +1322,19 @@ class AudioManager: NSObject, ObservableObject {
             }
         }
     }
-    
+
     /// Stop recording and cleanup mic following state
     private func stopMicFollowingRecording() {
         // Save the session before stopping
         saveMicFollowingSession()
-        
+
         stopSilenceProbeTimer()
         activityTracker = nil
         isRecordingDueToMicFollowing = false
         currentMicFollowingSession = nil
         stopRecording()
     }
-    
+
     /// Create a new transcription session for mic following
     private func createMicFollowingSession() {
         let session = TranscriptionSession(
@@ -1345,25 +1345,25 @@ class AudioManager: NSObject, ObservableObject {
         currentMicFollowingSession = session
         print("📝 Created mic following session: \(session.id)")
     }
-    
+
     /// Save mic following session with captured transcripts
     private func saveMicFollowingSession() {
         guard var session = currentMicFollowingSession else {
             print("⚠️ No mic following session to save")
             return
         }
-        
+
         // Add all final transcript chunks to the session
         session.transcriptChunks = transcriptChunks.filter { $0.isFinal }
-        
+
         // Only save if there's actual content
         guard !session.transcriptChunks.isEmpty else {
             print("ℹ️ Skipping save - no transcript content")
             return
         }
-        
+
         print("💾 Saving mic following session with \(session.transcriptChunks.count) chunks")
-        
+
         // Post notification to save the session
         NotificationCenter.default.post(
             name: NSNotification.Name("SaveTranscriptionSession"),
@@ -1371,7 +1371,7 @@ class AudioManager: NSObject, ObservableObject {
             userInfo: ["session": session]
         )
     }
-    
+
     /// When other apps stop using the mic → No longer used with silence detection
     private func handleOtherAppStoppedMic() {
         // This method is called when mic monitor detects state change to inactive
@@ -1379,4 +1379,3 @@ class AudioManager: NSObject, ObservableObject {
         print("ℹ️ Mic state changed to inactive (ignored in silence detection mode)")
     }
 }
-

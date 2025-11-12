@@ -51,7 +51,7 @@ final class ProcessTap {
     init(target: TapTarget, muteWhenRunning: Bool = false) {
         self.target = target
         self.muteWhenRunning = muteWhenRunning
-        self.logger = Logger(subsystem: "owen.meetingnotes", category: "\(String(describing: ProcessTap.self))(\(target.loggingProcessName))")
+        self.logger = Logger(subsystem: "owen.audora", category: "\(String(describing: ProcessTap.self))(\(target.loggingProcessName))")
     }
 
     @ObservationIgnored
@@ -101,7 +101,7 @@ final class ProcessTap {
             var err: OSStatus
 
             err = AudioDeviceStop(aggregateDeviceID, deviceProcID)
-            if err != noErr { 
+            if err != noErr {
                 logger.warning("Failed to stop aggregate device: \(err, privacy: .public)")
             }
 
@@ -144,7 +144,7 @@ final class ProcessTap {
             tapDescription = CATapDescription(stereoMixdownOfProcesses: processObjectIDs)
             logger.debug("Configuring tap for system audio output using \(processObjectIDs.count) explicit processes.")
         }
-        
+
         tapDescription.uuid = UUID()
         tapDescription.muteBehavior = muteWhenRunning ? .mutedWhenTapped : .unmuted
         var tapID: AUAudioObjectID = .unknown
@@ -197,7 +197,7 @@ final class ProcessTap {
             logger.error("Failed to read device UID for systemOutputID \(systemOutputID): \(error)")
             throw error // Propagate error
         }
-        
+
         let subDeviceListForAggregate: [[String: Any]]
         let aggregateDeviceName: String
         let aggregateUID = UUID().uuidString
@@ -231,7 +231,7 @@ final class ProcessTap {
             ]
         ]
         logger.debug("Aggregate device description prepared. Main sub-device UID: \(mainSubdeviceUID), Tap UUID: \(tapDescription.uuid.uuidString)")
-        
+
         aggregateDeviceID = AudioObjectID.unknown
         do {
             logger.debug("Calling AudioHardwareCreateAggregateDevice...")
@@ -327,8 +327,8 @@ final class ProcessTapRecorder {
         self.tapDisplayName = tap.displayName
         self.fileURL = fileURL
         self._tap = tap
-        self.logger = Logger(subsystem: "owen.meetingnotes", category: "\(String(describing: ProcessTapRecorder.self))(\(fileURL.lastPathComponent))")
-        
+        self.logger = Logger(subsystem: "owen.audora", category: "\(String(describing: ProcessTapRecorder.self))(\(fileURL.lastPathComponent))")
+
         self.icon = tap.target.iconImage
     }
 
@@ -345,7 +345,7 @@ final class ProcessTapRecorder {
     @MainActor
     func start() throws {
         logger.debug(#function)
-        
+
         guard !isRecording else {
             logger.warning("\(#function, privacy: .public) while already recording")
             return
@@ -384,7 +384,7 @@ final class ProcessTapRecorder {
             AVNumberOfChannelsKey: format.channelCount
         ]
         try FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: nil)
-        
+
         do {
             let file = try AVAudioFile(forWriting: fileURL, settings: settings, commonFormat: .pcmFormatFloat32, interleaved: format.isInterleaved)
             self.currentFile = file
@@ -407,7 +407,7 @@ final class ProcessTapRecorder {
         try tap.run(on: queue) { [weak self] inNow, inInputData, inInputTime, outOutputData, inOutputTime in
             guard let self else { return }
             var localAudioLevel: Float = 0.0
-            
+
             do {
                 guard let currentFile = self.currentFile else {
                     DispatchQueue.main.async { if self.currentAudioLevel != 0.0 { self.currentAudioLevel = 0.0 } }
@@ -418,7 +418,7 @@ final class ProcessTapRecorder {
                     DispatchQueue.main.async { if self.currentAudioLevel != 0.0 { self.currentAudioLevel = 0.0 } }
                     return
                 }
-                
+
                 var rms: Float = 0.0
                 if let floatChannelData = buffer.floatChannelData, buffer.frameLength > 0 {
                     let channelData = floatChannelData[0]
@@ -429,7 +429,7 @@ final class ProcessTapRecorder {
                         sumOfSquares += sample * sample
                     }
                     rms = sqrt(sumOfSquares / Float(frameLength))
-                    
+
                     #if DEBUG
                     if case .systemAudio = (try? self.tap)?.target {
                         print("SYSTEM MODE: buffer.frameLength = \(frameLength), RMS = \(rms)")
@@ -439,7 +439,7 @@ final class ProcessTapRecorder {
                     }
                     #endif
                 }
-                
+
                 localAudioLevel = min(max(rms * 2.0, 0.0), 1.0)
 
                 if buffer.frameLength == 0 {
@@ -453,7 +453,7 @@ final class ProcessTapRecorder {
                 print("ProcessTapRecorder: Buffer write error:", error)
                 localAudioLevel = 0.0
             }
-            
+
             DispatchQueue.main.async {
                 self.currentAudioLevel = localAudioLevel
             }
@@ -471,7 +471,7 @@ final class ProcessTapRecorder {
     func stop() {
         logger.debug(#function)
         guard isRecording else { return }
-        
+
         self.currentAudioLevel = 0.0
         self.isRecording = false
 
@@ -480,9 +480,9 @@ final class ProcessTapRecorder {
             self.currentFile = nil
             return
         }
-        
+
         tapToInvalidate.invalidate()
-            
+
         self.currentFile = nil
     }
 
@@ -496,4 +496,4 @@ final class ProcessTapRecorder {
             self.currentAudioLevel = 0.0
         }
     }
-} 
+}

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Verify Code Signing Setup for Meetingnotes
+# Verify Code Signing Setup for audora
 # This script checks if your Apple Developer credentials are properly configured
 
 set -e
@@ -76,10 +76,10 @@ echo ""
 
 # Check entitlements file
 echo "🔍 Entitlements File:"
-if [ -f "meetingnotes/meetingnotes.entitlements" ]; then
-    echo "   ✅ meetingnotes.entitlements found"
+if [ -f "audora/audora.entitlements" ]; then
+    echo "   ✅ audora.entitlements found"
 else
-    echo "   ❌ meetingnotes.entitlements not found"
+    echo "   ❌ audora.entitlements not found"
 fi
 
 echo ""
@@ -117,4 +117,4 @@ echo ""
 echo "💡 Quick setup with .env file:"
 echo "   1. Copy .env.template to .env: cp .env.template .env"
 echo "   2. Edit .env with your Apple ID and app-specific password"
-echo "   3. Load and verify: source .env && ./scripts/verify_codesigning.sh" 
+echo "   3. Load and verify: source .env && ./scripts/verify_codesigning.sh"

@@ -49,7 +49,7 @@ extension String: @retroactive LocalizedError {
 @Observable
 final class AudioProcessController {
 
-    private let logger = Logger(subsystem: "owen.meetingnotes", category: String(describing: AudioProcessController.self))
+    private let logger = Logger(subsystem: "owen.audora", category: String(describing: AudioProcessController.self))
 
     private(set) var processes = [AudioProcess]() {
         didSet {
@@ -80,7 +80,7 @@ final class AudioProcessController {
 
         do {
             let objectIdentifiers = try AudioObjectID.readProcessList()
-            
+
             let updatedProcesses: [AudioProcess] = objectIdentifiers.compactMap { objectID in
                 do {
                     let proc = try AudioProcess(objectID: objectID, runningApplications: apps)
@@ -236,4 +236,4 @@ private extension URL {
     var isApp: Bool {
         (try? resourceValues(forKeys: [.contentTypeKey]))?.contentType?.conforms(to: .application) == true
     }
-} 
+}

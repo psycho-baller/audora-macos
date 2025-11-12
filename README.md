@@ -2,12 +2,12 @@
   <!-- REMOVE THIS IF YOU DON'T HAVE A LOGO -->
     <img src="https://github.com/user-attachments/assets/309577e8-94db-431f-b8df-a53a763b4c87" alt="Logo" width="80" height="80">
 
-<h3 align="center">Meetingnotes</h3>
+<h3 align="center">audora</h3>
 
   <p align="center">
     The Free, Open-Source AI Notetaker for Busy Engineers
     <br />
-     <a href="https://github.com/owengretzinger/meetingnotes/releases/latest/download/Meetingnotes.dmg">Download for MacOS 14+</a>
+     <a href="https://github.com/psycho-baller/audora/releases/latest/download/audora.dmg">Download for MacOS 14+</a>
   </p>
 </div>
 
@@ -52,10 +52,10 @@ Follow these steps to create a new release with auto-updates:
 
 3. **Create GitHub Release:**
 
-   - Go to [GitHub Releases](https://github.com/owengretzinger/meetingnotes/releases)
+   - Go to [GitHub Releases](https://github.com/psycho-baller/audora/releases)
    - Click "Create a new release"
    - Tag: `v1.0.1` (match the version number)
-   - Title: `Meetingnotes v1.0.1`
+   - Title: `audora v1.0.1`
    - Upload the DMG and zip files from `releases/` folder
    - Generate release notes
 

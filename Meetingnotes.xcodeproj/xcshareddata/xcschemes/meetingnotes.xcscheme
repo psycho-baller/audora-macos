@@ -16,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "CC5718172E201D8D0042BA88"
-               BuildableName = "Meetingnotes.app"
-               BlueprintName = "Meetingnotes"
-               ReferencedContainer = "container:Meetingnotes.xcodeproj">
+               BuildableName = "audora.app"
+               BlueprintName = "audora"
+               ReferencedContainer = "container:audora.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -45,9 +45,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "CC5718172E201D8D0042BA88"
-            BuildableName = "Meetingnotes.app"
-            BlueprintName = "Meetingnotes"
-            ReferencedContainer = "container:Meetingnotes.xcodeproj">
+            BuildableName = "audora.app"
+            BlueprintName = "audora"
+            ReferencedContainer = "container:audora.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -62,9 +62,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "CC5718172E201D8D0042BA88"
-            BuildableName = "Meetingnotes.app"
-            BlueprintName = "Meetingnotes"
-            ReferencedContainer = "container:Meetingnotes.xcodeproj">
+            BuildableName = "audora.app"
+            BlueprintName = "audora"
+            ReferencedContainer = "container:audora.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

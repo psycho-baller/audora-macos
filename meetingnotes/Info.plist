@@ -9,7 +9,7 @@
 	<key>SUEnableInstallerLauncherService</key>
 	<true/>
 	<key>SUFeedURL</key>
-	<string>https://raw.githubusercontent.com/owengretzinger/meetingnotes/main/appcast.xml</string>
+	<string>https://raw.githubusercontent.com/psycho-baller/audora/main/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>BVXHOV8ZxPxKZ1swhFndymzew9nyd3si7849JA9cqsg=</string>
 </dict>

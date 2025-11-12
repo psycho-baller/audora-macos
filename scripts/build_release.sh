@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# Build and Release Script for Meetingnotes
+# Build and Release Script for audora
 # This script builds the app, creates a DMG, and generates the appcast
 
 set -e  # Exit on any error
 
 # Configuration
-APP_NAME="Meetingnotes"
-BUNDLE_ID="owen.meetingnotes"
-VERSION=$(grep -m1 "MARKETING_VERSION" Meetingnotes.xcodeproj/project.pbxproj | sed 's/.*= \(.*\);/\1/')
+APP_NAME="audora"
+BUNDLE_ID="owen.audora"
+VERSION=$(grep -m1 "MARKETING_VERSION" audora.xcodeproj/project.pbxproj | sed 's/.*= \(.*\);/\1/')
 
 # Source environment variables if .env file exists
 if [ -f ".env" ]; then
@@ -26,7 +26,7 @@ APP_PASSWORD="${APP_PASSWORD:-}"
 
 if [ -z "$VERSION" ]; then
     echo "❌ Could not determine version from project file"
-    echo "   Make sure Meetingnotes.xcodeproj/project.pbxproj exists and contains MARKETING_VERSION"
+    echo "   Make sure audora.xcodeproj/project.pbxproj exists and contains MARKETING_VERSION"
     exit 1
 fi
 
@@ -81,8 +81,8 @@ ARCHS="arm64 x86_64"
 
 echo "📦 Building universal app (archs: $ARCHS)..."
 xcodebuild \
-  -project Meetingnotes.xcodeproj \
-  -scheme meetingnotes \
+  -project audora.xcodeproj \
+  -scheme audora \
   -configuration Release \
   -derivedDataPath "${BUILD_DIR}" \
   -destination 'generic/platform=macOS' \
@@ -106,7 +106,7 @@ echo "🔏 Code signing all embedded frameworks and components..."
 # This is required for notarization - we must sign from the inside out
 find "$APP_PATH" -name "*.framework" -type d | while read framework; do
     echo "   Signing framework: $(basename "$framework")"
-    
+
     # Sign all binaries within the framework
     find "$framework" -type f -perm +111 -exec sh -c 'file "$1" | grep -q "Mach-O"' _ {} \; -print | while read binary; do
         echo "      Signing binary: $(basename "$binary")"
@@ -117,7 +117,7 @@ find "$APP_PATH" -name "*.framework" -type d | while read framework; do
           --timestamp \
           "$binary"
     done
-    
+
     # Sign the framework itself
     codesign \
       --force \
@@ -153,7 +153,7 @@ echo "🔏 Code signing the main app with hardened runtime..."
 codesign \
   --force \
   --options runtime \
-  --entitlements "meetingnotes/meetingnotes.entitlements" \
+  --entitlements "audora/audora.entitlements" \
   --sign "$DEVELOPER_ID" \
   --timestamp \
   "$APP_PATH"
@@ -251,7 +251,7 @@ NOTARIZATION_RESPONSE=$(xcrun notarytool submit "$DMG_PATH" \
 
 if echo "$NOTARIZATION_RESPONSE" | grep -q "status: Accepted"; then
     echo "✅ Notarization successful!"
-    
+
     # Staple the notarization
     echo "📎 Stapling notarization ticket to DMG..."
     xcrun stapler staple "$DMG_PATH"
@@ -295,8 +295,8 @@ fi
 
 echo "🔧 Fixing download URLs in appcast.xml..."
 # Fix ZIP/DMG URLs to include version folder
-# Transform "https://github.com/.../download/Meetingnotes-1.0.3.zip" to "https://github.com/.../download/v1.0.3/Meetingnotes-1.0.3.zip"
-sed -i '' -E 's|url="([^"]*/download/)(Meetingnotes-([0-9]+\.[0-9]+\.[0-9]+)\.(zip\|dmg))"|url="\1v\3/\2"|g' appcast.xml
+# Transform "https://github.com/.../download/audora-1.0.3.zip" to "https://github.com/.../download/v1.0.3/audora-1.0.3.zip"
+sed -i '' -E 's|url="([^"]*/download/)(audora-([0-9]+\.[0-9]+\.[0-9]+)\.(zip\|dmg))"|url="\1v\3/\2"|g' appcast.xml
 
 # Fix delta URLs - they need to be in the version folder of the release they belong to
 # We'll need to parse the appcast to figure out which version each delta belongs to
@@ -317,7 +317,7 @@ for item in root.findall('.//item'):
     version_elem = item.find('.//{http://www.andymatuschak.org/xml-namespaces/sparkle}shortVersionString')
     if version_elem is not None:
         version = version_elem.text
-        
+
         # Fix all delta URLs within this item's sparkle:deltas section
         deltas_elem = item.find('.//{http://www.andymatuschak.org/xml-namespaces/sparkle}deltas')
         if deltas_elem is not None:
@@ -327,7 +327,7 @@ for item in root.findall('.//item'):
                     # Extract just the filename
                     filename = url.split('/')[-1]
                     # Set the correct URL with version folder
-                    new_url = f'https://github.com/owengretzinger/meetingnotes/releases/download/v{version}/{filename}'
+                    new_url = f'https://github.com/psycho-baller/audora/releases/download/v{version}/{filename}'
                     enclosure.set('url', new_url)
 
         # Fix the main enclosure URL (ZIP/DMG) to point to the GitHub release asset
@@ -336,7 +336,7 @@ for item in root.findall('.//item'):
             url = main_enclosure.get('url')
             if url:
                 filename = url.split('/')[-1]
-                new_url = f'https://github.com/owengretzinger/meetingnotes/releases/download/v{version}/{filename}'
+                new_url = f'https://github.com/psycho-baller/audora/releases/download/v{version}/{filename}'
                 main_enclosure.set('url', new_url)
 
 # Write the fixed appcast
@@ -352,7 +352,7 @@ EOF
 
 echo "🚚 Moving only NEW delta files into version folder..."
 # Get the build number from the project
-BUILD_NUMBER=$(grep -m1 "CURRENT_PROJECT_VERSION" Meetingnotes.xcodeproj/project.pbxproj | sed 's/.*= \(.*\);/\1/')
+BUILD_NUMBER=$(grep -m1 "CURRENT_PROJECT_VERSION" audora.xcodeproj/project.pbxproj | sed 's/.*= \(.*\);/\1/')
 if compgen -G "$APPCAST_WORK/${APP_NAME}${BUILD_NUMBER}-"*.delta > /dev/null 2>&1; then
     echo "[DEBUG] Moving new delta files for build $BUILD_NUMBER..."
     mv "$APPCAST_WORK/${APP_NAME}${BUILD_NUMBER}-"*.delta "$VERSION_DIR/" 2>/dev/null || true
@@ -379,4 +379,4 @@ echo "   1. Test the DMG on another Mac"
 echo "   2. Create a GitHub release with tag v${VERSION}"
 echo "   3. Upload the DMG to the GitHub release"
 echo "   4. Commit and push the appcast.xml file"
-echo "   5. Your users will get auto-update notifications!" 
+echo "   5. Your users will get auto-update notifications!"

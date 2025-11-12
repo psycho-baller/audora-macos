@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Version Update Script for Meetingnotes
+# Version Update Script for audora
 # Usage: ./update_version.sh [major|minor|patch|build] [custom_version]
 
 set -e
 
-PROJECT_FILE="Meetingnotes.xcodeproj/project.pbxproj"
+PROJECT_FILE="audora.xcodeproj/project.pbxproj"
 CURRENT_MARKETING_VERSION=$(grep -m1 "MARKETING_VERSION" "$PROJECT_FILE" | sed 's/.*= \(.*\);/\1/')
 CURRENT_BUILD_VERSION=$(grep -m1 "CURRENT_PROJECT_VERSION" "$PROJECT_FILE" | sed 's/.*= \(.*\);/\1/')
 
@@ -24,12 +24,12 @@ echo ""
 increment_version() {
     local version=$1
     local type=$2
-    
+
     IFS='.' read -ra VERSION_PARTS <<< "$version"
     local major=${VERSION_PARTS[0]:-0}
     local minor=${VERSION_PARTS[1]:-0}
     local patch=${VERSION_PARTS[2]:-0}
-    
+
     case $type in
         "major")
             major=$((major + 1))
@@ -48,7 +48,7 @@ increment_version() {
             exit 1
             ;;
     esac
-    
+
     echo "${major}.${minor}.${patch}"
 }
 
@@ -56,13 +56,13 @@ increment_version() {
 update_project_version() {
     local new_marketing_version=$1
     local new_build_version=$2
-    
+
     # Update marketing version
     sed -i '' "s/MARKETING_VERSION = .*;/MARKETING_VERSION = $new_marketing_version;/g" "$PROJECT_FILE"
-    
+
     # Update build version
     sed -i '' "s/CURRENT_PROJECT_VERSION = .*;/CURRENT_PROJECT_VERSION = $new_build_version;/g" "$PROJECT_FILE"
-    
+
     echo "✅ Updated project file:"
     echo "   Marketing Version: $CURRENT_MARKETING_VERSION → $new_marketing_version"
     echo "   Build Version: $CURRENT_BUILD_VERSION → $new_build_version"
@@ -107,4 +107,4 @@ echo ""
 echo "🎯 Next steps:"
 echo "   1. Test the app to make sure everything works"
 echo "   2. Run ./scripts/build_release.sh to create a release"
-echo "   3. The new version will be: $(grep -m1 "MARKETING_VERSION" "$PROJECT_FILE" | sed 's/.*= \(.*\);/\1/')" 
+echo "   3. The new version will be: $(grep -m1 "MARKETING_VERSION" "$PROJECT_FILE" | sed 's/.*= \(.*\);/\1/')"

@@ -177,22 +177,22 @@ struct SettingsView: View {
 
                     // Link to GitHub repository
                     Link("GitHub",
-                         destination: URL(string: "https://github.com/owengretzinger/meetingnotes")!)
+                         destination: URL(string: "https://github.com/psycho-baller/audora")!)
                         .foregroundColor(.blue)
 
                     // Link to landing page
                     Link("Landing Page",
-                         destination: URL(string: "https://meetingnotes.owengretzinger.com")!)
+                         destination: URL(string: "https://audora.psycho-baller.com")!)
                         .foregroundColor(.blue)
 
                     // Link to Privacy Policy
                     Link("Privacy Policy",
-                         destination: URL(string: "https://meetingnotes.owengretzinger.com/privacy")!)
+                         destination: URL(string: "https://audora.psycho-baller.com/privacy")!)
                         .foregroundColor(.blue)
 
                     // Link to Terms of Service
                     Link("Terms of Service",
-                         destination: URL(string: "https://meetingnotes.owengretzinger.com/terms")!)
+                         destination: URL(string: "https://audora.psycho-baller.com/terms")!)
                         .foregroundColor(.blue)
                 }
 

@@ -9,10 +9,10 @@ struct OnboardingView: View {
     @State private var systemAudioPermissionGranted = false
     @State private var showingPermissionAlert = false
     @State private var permissionAlertMessage = ""
-    
+
     // Add AudioRecordingPermission instance
     @State private var audioRecordingPermission = AudioRecordingPermission()
-    
+
     var body: some View {
         GeometryReader { geometry in
             VStack(spacing: 0) {
@@ -24,7 +24,7 @@ struct OnboardingView: View {
                             Text("Required Permissions")
                                 .font(.title2)
                                 .fontWeight(.semibold)
-                        
+
                             VStack(spacing: 12) {
                                 PermissionRow(
                                     title: "Microphone Access",
@@ -32,7 +32,7 @@ struct OnboardingView: View {
                                     isGranted: micPermissionGranted,
                                     action: requestMicrophonePermission
                                 )
-                                
+
                                 PermissionRow(
                                     title: "System Audio Recording",
                                     description: "Required to transcribe what others say in meetings",
@@ -42,30 +42,30 @@ struct OnboardingView: View {
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        
+
                         // API Key Section
                         VStack(alignment: .leading, spacing: 8) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("OpenAI API Key")
                                     .font(.title2)
                                     .fontWeight(.semibold)
-                                
+
                                 Text("Uses gpt-4o-mini-transcribe and gpt-4.1. Typical cost is ~$0.20/hour. Your Mac communicates directly with OpenAI.")
                                     .font(.body)
                                 .foregroundColor(.secondary)
                             }
-                            
+
                             Button("Get API Key from OpenAI") {
                                 if let url = URL(string: "https://platform.openai.com/api-keys") {
                                     NSWorkspace.shared.open(url)
                                 }
                             }
                             .buttonStyle(.link)
-                            
+
                             SecureField("OpenAI API Key", text: $apiKey)
                                 .textFieldStyle(.roundedBorder)
                                 .font(.body)
-                            
+
                             HStack {
                                 Image(systemName: "info.circle")
                                     .foregroundColor(.blue)
@@ -75,51 +75,51 @@ struct OnboardingView: View {
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        
+
                         // Terms Section
                         VStack(alignment: .leading, spacing: 8) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Terms and Privacy")
                                     .font(.title2)
                                     .fontWeight(.semibold)
-                                
+
                                 Text("Of note, I am tracking a few basic anonymous metrics (installs, opens, meetings created) using PostHog, because I'm trying to gauge interest in the app. Everything is completely anonymous (feel free to check the source code). If you have any concerns, please reach out and we can find a solution.")
                                     .font(.body)
                                     .foregroundColor(.secondary)
                             }
-                            
+
                             HStack {
                                 Button("Privacy Policy") {
-                                    if let url = URL(string: "https://meetingnotes.owengretzinger.com/privacy") {
+                                    if let url = URL(string: "https://audora.psycho-baller.com/privacy") {
                                         NSWorkspace.shared.open(url)
                                     }
                                 }
                                 .buttonStyle(.link)
-                                
+
                                 Text("•")
                                     .foregroundColor(.secondary)
-                                
+
                                 Button("Terms of Service") {
-                                    if let url = URL(string: "https://meetingnotes.owengretzinger.com/terms") {
+                                    if let url = URL(string: "https://audora.psycho-baller.com/terms") {
                                         NSWorkspace.shared.open(url)
                                     }
                                 }
                                 .buttonStyle(.link)
-                                
+
                                 Spacer()
                             }
-                            
+
                             HStack {
                                 Button(action: { hasAcceptedTerms.toggle() }) {
                                     Image(systemName: hasAcceptedTerms ? "checkmark.square.fill" : "square")
                                         .foregroundColor(hasAcceptedTerms ? .blue : .secondary)
                                 }
                                 .buttonStyle(.plain)
-                                
+
                                 Text("I have read and agree to the Terms of Service and Privacy Policy")
                                     .font(.body)
                                     .foregroundColor(.primary)
-                                
+
                                 Spacer()
                             }
 
@@ -141,7 +141,7 @@ struct OnboardingView: View {
                     .padding(.vertical, 30)
                     .padding(.horizontal, 24)
                     .frame(maxWidth: .infinity)
-                    
+
                 }
                 .frame(maxHeight: .infinity)
             }
@@ -167,22 +167,22 @@ struct OnboardingView: View {
             checkPermissions()
         }
     }
-    
+
     private var canProceed: Bool {
-        return micPermissionGranted && 
-               systemAudioPermissionGranted && 
+        return micPermissionGranted &&
+               systemAudioPermissionGranted &&
                !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
                hasAcceptedTerms
     }
-    
+
     private func checkPermissions() {
         // Check microphone permission using AVCaptureDevice (macOS compatible)
         micPermissionGranted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
-        
+
         // Check system audio recording permission
         systemAudioPermissionGranted = (audioRecordingPermission.status == .authorized)
     }
-    
+
     private func requestMicrophonePermission() {
         AVCaptureDevice.requestAccess(for: .audio) { granted in
             DispatchQueue.main.async {
@@ -194,10 +194,10 @@ struct OnboardingView: View {
             }
         }
     }
-    
+
     private func requestSystemAudioPermission() {
         audioRecordingPermission.request()
-        
+
         // Show alert if permission is denied after request
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             if audioRecordingPermission.status == .denied {
@@ -213,21 +213,21 @@ struct PermissionRow: View {
     let description: String
     let isGranted: Bool
     let action: () -> Void
-    
+
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.body)
                     .fontWeight(.medium)
-                
+
                 Text(description)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-            
+
             Spacer()
-            
+
             if isGranted {
                 HStack {
                     Image(systemName: "checkmark.circle.fill")

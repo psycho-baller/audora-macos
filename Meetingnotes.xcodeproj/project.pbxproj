@@ -13,13 +13,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		CC5718182E201D8D0042BA88 /* Meetingnotes.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Meetingnotes.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CC5718182E201D8D0042BA88 /* audora.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = audora.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		CC57181A2E201D8D0042BA88 /* meetingnotes */ = {
+		CC57181A2E201D8D0042BA88 /* audora */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = meetingnotes;
+			path = audora;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -41,7 +41,7 @@
 		CC57180F2E201D8D0042BA88 = {
 			isa = PBXGroup;
 			children = (
-				CC57181A2E201D8D0042BA88 /* meetingnotes */,
+				CC57181A2E201D8D0042BA88 /* audora */,
 				CC7816BF2E22093900101A90 /* Frameworks */,
 				CC5718192E201D8D0042BA88 /* Products */,
 			);
@@ -50,7 +50,7 @@
 		CC5718192E201D8D0042BA88 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				CC5718182E201D8D0042BA88 /* Meetingnotes.app */,
+				CC5718182E201D8D0042BA88 /* audora.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -65,9 +65,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		CC5718172E201D8D0042BA88 /* Meetingnotes */ = {
+		CC5718172E201D8D0042BA88 /* audora */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = CC5718272E201D8E0042BA88 /* Build configuration list for PBXNativeTarget "Meetingnotes" */;
+			buildConfigurationList = CC5718272E201D8E0042BA88 /* Build configuration list for PBXNativeTarget "audora" */;
 			buildPhases = (
 				CC5718142E201D8D0042BA88 /* Sources */,
 				CC5718152E201D8D0042BA88 /* Frameworks */,
@@ -78,16 +78,16 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				CC57181A2E201D8D0042BA88 /* meetingnotes */,
+				CC57181A2E201D8D0042BA88 /* audora */,
 			);
-			name = Meetingnotes;
+			name = audora;
 			packageProductDependencies = (
 				CC5718372E2020490042BA88 /* OpenAI */,
 				CCBA53E62E212F1C00469D84 /* Sparkle */,
 				CCC33F802E236B6F00EDE382 /* PostHog */,
 			);
-			productName = Meetingnotes;
-			productReference = CC5718182E201D8D0042BA88 /* Meetingnotes.app */;
+			productName = audora;
+			productReference = CC5718182E201D8D0042BA88 /* audora.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -105,7 +105,7 @@
 					};
 				};
 			};
-			buildConfigurationList = CC5718132E201D8D0042BA88 /* Build configuration list for PBXProject "Meetingnotes" */;
+			buildConfigurationList = CC5718132E201D8D0042BA88 /* Build configuration list for PBXProject "audora" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -124,7 +124,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				CC5718172E201D8D0042BA88 /* Meetingnotes */,
+				CC5718172E201D8D0042BA88 /* audora */,
 			);
 		};
 /* End PBXProject section */
@@ -276,19 +276,19 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
-				CODE_SIGN_ENTITLEMENTS = meetingnotes/meetingnotes.entitlements;
+				CODE_SIGN_ENTITLEMENTS = audora/audora.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"meetingnotes/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"audora/Preview Content\"";
 				DEVELOPMENT_TEAM = 3V2UU7RRK9;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = meetingnotes/Info.plist;
+				INFOPLIST_FILE = audora/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Meetingnotes needs access to your microphone for transcription.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "audora needs access to your microphone for transcription.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -312,19 +312,19 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
-				CODE_SIGN_ENTITLEMENTS = meetingnotes/meetingnotes.entitlements;
+				CODE_SIGN_ENTITLEMENTS = audora/audora.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"meetingnotes/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"audora/Preview Content\"";
 				DEVELOPMENT_TEAM = 3V2UU7RRK9;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = meetingnotes/Info.plist;
+				INFOPLIST_FILE = audora/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Meetingnotes needs access to your microphone for transcription.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "audora needs access to your microphone for transcription.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -344,7 +344,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		CC5718132E201D8D0042BA88 /* Build configuration list for PBXProject "Meetingnotes" */ = {
+		CC5718132E201D8D0042BA88 /* Build configuration list for PBXProject "audora" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				CC5718252E201D8E0042BA88 /* Debug */,
@@ -353,7 +353,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		CC5718272E201D8E0042BA88 /* Build configuration list for PBXNativeTarget "Meetingnotes" */ = {
+		CC5718272E201D8E0042BA88 /* Build configuration list for PBXNativeTarget "audora" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				CC5718282E201D8E0042BA88 /* Debug */,

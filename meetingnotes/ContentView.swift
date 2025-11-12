@@ -1,6 +1,6 @@
 //
 //  ContentView.swift
-//  meetingnotes
+//  audora
 //
 //  Created by Owen Gretzinger on 2025-07-10.
 //
@@ -22,7 +22,7 @@ struct ContentView: View {
                         if settingsViewModel.settings.autoRecordingEnabled {
                             AudioManager.shared.enableAutoRecording()
                         }
-                        
+
                         // Restore mic following state on launch
                         if settingsViewModel.settings.micFollowingEnabled {
                             AudioManager.shared.enableMicFollowing()
