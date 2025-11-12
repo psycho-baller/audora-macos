@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 import Combine
 import PostHog
+import AppKit
 
 @MainActor
 class MeetingListViewModel: ObservableObject {
@@ -78,7 +79,19 @@ class MeetingListViewModel: ObservableObject {
     }
     
     func createNewMeeting() -> Meeting {
-        let newMeeting = Meeting()
+        let context = BrowserURLHelper.getCurrentContext()
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM d, h:mm a"
+        let formattedDate = dateFormatter.string(from: Date())
+        
+        let title: String
+        if let contextName = context {
+            title = "\(contextName) - \(formattedDate)"
+        } else {
+            title = "Recording - \(formattedDate)"
+        }
+        
+        let newMeeting = Meeting(title: title)
         meetings.insert(newMeeting, at: 0)
         _ = LocalStorageManager.shared.saveMeeting(newMeeting)
         // Track meeting creation event

@@ -6,6 +6,7 @@ import Foundation
 import SwiftUI
 import OSLog
 import Combine
+import AppKit
 
 /// Manages audio capture from microphone and system audio and handles real-time transcription via OpenAI
 @MainActor
@@ -1337,13 +1338,25 @@ class AudioManager: NSObject, ObservableObject {
 
     /// Create a new transcription session for mic following
     private func createMicFollowingSession() {
+        let context = BrowserURLHelper.getCurrentContext()
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM d, h:mm a"
+        let formattedDate = dateFormatter.string(from: Date())
+        
+        let title: String
+        if let contextName = context {
+            title = "\(contextName) - \(formattedDate)"
+        } else {
+            title = "Recording - \(formattedDate)"
+        }
+        
         let session = TranscriptionSession(
             date: Date(),
-            title: "Mic Following \(Date().formatted(date: .abbreviated, time: .shortened))",
+            title: title,
             source: .micFollowing
         )
         currentMicFollowingSession = session
-        print("📝 Created mic following session: \(session.id)")
+        print("📝 Created mic following session: \(session.id) - \(title)")
     }
 
     /// Save mic following session with captured transcripts
