@@ -167,6 +167,10 @@ struct SetupView: View {
 
                             // Finish setup button
                             Button("Finish Setup") {
+                                // Complete onboarding
+                                settingsViewModel.settings.licenseKey = licenseKey
+                                settingsViewModel.settings.openAIKey = apiKey
+                                
                                 settingsViewModel.completeOnboarding()
                             }
                             .buttonStyle(.borderedProminent)
@@ -189,12 +193,14 @@ struct SetupView: View {
             Text(permissionAlertMessage)
         }
         .onAppear {
+            checkPermissions()
+            
             settingsViewModel.loadLicenseKey()
             settingsViewModel.loadAPIKey()
-            checkPermissions()
             
             licenseKey = settingsViewModel.settings.licenseKey
             apiKey = settingsViewModel.settings.openAIKey
+            
             hasAcceptedTerms = settingsViewModel.settings.hasAcceptedTerms
         }
         .onChange(of: audioRecordingPermission.status) { oldValue, newValue in
