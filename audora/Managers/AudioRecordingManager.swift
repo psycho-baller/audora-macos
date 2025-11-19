@@ -285,5 +285,35 @@ class AudioRecordingManager: ObservableObject {
             return nil
         }
     }
+    
+    /// Deletes all audio files associated with a meeting
+    /// - Parameter meetingId: The ID of the meeting
+    func deleteAudioFiles(for meetingId: UUID) {
+        // Delete the final M4A file
+        let finalFileURL = recordingsDirectory.appendingPathComponent("\(meetingId.uuidString).m4a")
+        if FileManager.default.fileExists(atPath: finalFileURL.path) {
+            do {
+                try FileManager.default.removeItem(at: finalFileURL)
+                print("✅ Deleted audio file: \(finalFileURL.lastPathComponent)")
+            } catch {
+                print("❌ Failed to delete audio file: \(error)")
+            }
+        }
+        
+        // Delete any remaining segment files (in case recording was interrupted)
+        do {
+            let files = try FileManager.default.contentsOfDirectory(at: recordingsDirectory, includingPropertiesForKeys: nil)
+            let segmentFiles = files.filter { $0.lastPathComponent.hasPrefix("\(meetingId.uuidString)_") }
+            for segmentFile in segmentFiles {
+                try? FileManager.default.removeItem(at: segmentFile)
+                print("✅ Deleted segment file: \(segmentFile.lastPathComponent)")
+            }
+        } catch {
+            print("❌ Failed to list segment files: \(error)")
+        }
+        
+        // Clear any tracked segments for this meeting
+        meetingSegments[meetingId] = nil
+    }
 }
 
