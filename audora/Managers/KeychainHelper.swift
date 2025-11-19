@@ -25,6 +25,19 @@ class KeychainHelper {
         return save(apiKey, forKey: "openAIKey")
     }
     
+    /// Gets the License Key directly from keychain
+    /// - Returns: The license key string if found, nil otherwise
+    func getLicenseKey() -> String? {
+        return get(forKey: "licenseKey")
+    }
+
+    /// Saves the License Key to keychain
+    /// - Parameter licenseKey: The license key to save
+    /// - Returns: True if the save was successful, false otherwise
+    func saveLicenseKey(_ licenseKey: String) -> Bool {
+        return save(licenseKey, forKey: "licenseKey")
+    }
+    
     /// Saves a string value to the keychain
     /// - Parameters:
     ///   - value: The string value to save

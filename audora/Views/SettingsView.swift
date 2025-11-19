@@ -15,6 +15,20 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 24) {
                 // API Configuration Section
                 VStack(alignment: .leading, spacing: 8) {
+                    Text("License Key")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+
+                    Text("Stored locally and encrypted in Keychain.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    SecureField("License Key", text: $viewModel.settings.licenseKey)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(maxWidth: .infinity)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
                     Text("OpenAI API Key")
                         .font(.headline)
                         .foregroundColor(.primary)
