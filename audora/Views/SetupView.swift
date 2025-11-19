@@ -5,9 +5,6 @@ struct SetupView: View {
     @ObservedObject var settingsViewModel: SettingsViewModel
     let goBack: () -> Void
     
-    @State private var licenseKey = ""
-    @State private var apiKey = ""
-    @State private var hasAcceptedTerms = false
     @State private var micPermissionGranted = false
     @State private var systemAudioPermissionGranted = false
     @State private var showingPermissionAlert = false
@@ -58,7 +55,7 @@ struct SetupView: View {
                                     .foregroundColor(.secondary)
                             }
 
-                            SecureField("License Key", text: $licenseKey)
+                            SecureField("License Key", text: $settingsViewModel.settings.licenseKey)
                                 .textFieldStyle(.roundedBorder)
                                 .font(.body)
 
@@ -91,7 +88,7 @@ struct SetupView: View {
                             }
                             .buttonStyle(.link)
 
-                            SecureField("OpenAI API Key", text: $apiKey)
+                            SecureField("OpenAI API Key", text: $settingsViewModel.settings.openAIKey)
                                 .textFieldStyle(.roundedBorder)
                                 .font(.body)
 
@@ -139,9 +136,9 @@ struct SetupView: View {
                             }
 
                             HStack {
-                                Button(action: { hasAcceptedTerms.toggle() }) {
-                                    Image(systemName: hasAcceptedTerms ? "checkmark.square.fill" : "square")
-                                        .foregroundColor(hasAcceptedTerms ? .blue : .secondary)
+                                Button(action: { settingsViewModel.settings.hasAcceptedTerms.toggle() }) {
+                                    Image(systemName: settingsViewModel.settings.hasAcceptedTerms ? "checkmark.square.fill" : "square")
+                                        .foregroundColor(settingsViewModel.settings.hasAcceptedTerms ? .blue : .secondary)
                                 }
                                 .buttonStyle(.plain)
 
@@ -168,9 +165,6 @@ struct SetupView: View {
                             // Finish setup button
                             Button("Finish Setup") {
                                 // Complete onboarding
-                                settingsViewModel.settings.licenseKey = licenseKey
-                                settingsViewModel.settings.openAIKey = apiKey
-                                
                                 settingsViewModel.completeOnboarding()
                             }
                             .buttonStyle(.borderedProminent)
@@ -197,11 +191,6 @@ struct SetupView: View {
             
             settingsViewModel.loadLicenseKey()
             settingsViewModel.loadAPIKey()
-            
-            licenseKey = settingsViewModel.settings.licenseKey
-            apiKey = settingsViewModel.settings.openAIKey
-            
-            hasAcceptedTerms = settingsViewModel.settings.hasAcceptedTerms
         }
         .onChange(of: audioRecordingPermission.status) { oldValue, newValue in
             // Update permission status when it changes
@@ -216,9 +205,9 @@ struct SetupView: View {
     private var canProceed: Bool {
         return micPermissionGranted &&
                systemAudioPermissionGranted &&
-               !licenseKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-               !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-               hasAcceptedTerms
+               !settingsViewModel.settings.licenseKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+               !settingsViewModel.settings.openAIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+                settingsViewModel.settings.hasAcceptedTerms
     }
 
     private func checkPermissions() {
