@@ -1,9 +1,13 @@
 import SwiftUI
 import AVFoundation
+import AppKit
 
 struct AudioPlayerView: View {
     @StateObject private var playerManager = AudioPlayerManager()
     let audioURL: URL?
+    @State private var hoveredButton: String? = nil
+    @State private var isHoveringProgressBar = false
+    @State private var dragStartProgress: Double = 0
     
     var body: some View {
         Group {
@@ -22,7 +26,7 @@ struct AudioPlayerView: View {
                 ZStack(alignment: .leading) {
                     // Background track
                     Rectangle()
-                        .fill(Color.gray.opacity(0.2))
+                        .fill(Color.gray.opacity(isHoveringProgressBar ? 0.3 : 0.2))
                         .frame(height: 4)
                         .cornerRadius(2)
                     
@@ -32,18 +36,53 @@ struct AudioPlayerView: View {
                         .frame(width: geometry.size.width * playerManager.progress, height: 4)
                         .cornerRadius(2)
                     
-                    // Draggable thumb
+                    // Invisible overlay for tap-to-seek (behind thumb so thumb gets priority)
+                    Rectangle()
+                        .fill(Color.clear)
+                        .contentShape(Rectangle())
+                        .frame(height: 12)
+                        .gesture(
+                            DragGesture(minimumDistance: 0)
+                                .onEnded { value in
+                                    // Only seek if this was a tap (minimal movement)
+                                    // This allows the thumb drag to work while still enabling tap-to-seek
+                                    if abs(value.translation.width) < 5 && abs(value.translation.height) < 5 {
+                                        let newProgress = max(0, min(1, value.location.x / geometry.size.width))
+                                        playerManager.seek(to: newProgress)
+                                    }
+                                }
+                        )
+                    
+                    // Draggable thumb (on top, gets priority)
                     Circle()
                         .fill(Color.blue)
                         .frame(width: 12, height: 12)
                         .offset(x: geometry.size.width * playerManager.progress - 6)
-                        .gesture(
+                        .highPriorityGesture(
                             DragGesture(minimumDistance: 0)
                                 .onChanged { value in
-                                    let newProgress = max(0, min(1, value.location.x / geometry.size.width))
+                                    // Capture start progress at the beginning of the drag
+                                    if abs(value.translation.width) < 0.1 {
+                                        dragStartProgress = playerManager.progress
+                                    }
+                                    
+                                    // Calculate new progress based on start position + translation
+                                    let startX = geometry.size.width * dragStartProgress
+                                    let newX = startX + value.translation.width
+                                    let newProgress = max(0, min(1, newX / geometry.size.width))
                                     playerManager.seek(to: newProgress)
                                 }
                         )
+                }
+                .onHover { hovering in
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isHoveringProgressBar = hovering
+                    }
+                    if hovering {
+                        NSCursor.pointingHand.push()
+                    } else {
+                        NSCursor.pop()
+                    }
                 }
             }
             .frame(height: 12)
@@ -57,9 +96,22 @@ struct AudioPlayerView: View {
                     Image(systemName: "gobackward.10")
                         .font(.system(size: 18))
                         .foregroundColor(.primary)
+                        .frame(width: 28, height: 28)
+                        .background(Color.gray.opacity(hoveredButton == "skipBackward" ? 0.15 : 0.05))
+                        .cornerRadius(6)
                 }
                 .buttonStyle(.plain)
                 .disabled(!playerManager.isReady)
+                .onHover { hovering in
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        hoveredButton = hovering ? "skipBackward" : nil
+                    }
+                    if hovering {
+                        NSCursor.pointingHand.push()
+                    } else {
+                        NSCursor.pop()
+                    }
+                }
                 
                 // Play/Pause button
                 Button(action: {
@@ -68,9 +120,22 @@ struct AudioPlayerView: View {
                     Image(systemName: playerManager.isPlaying ? "pause.circle.fill" : "play.circle.fill")
                         .font(.system(size: 32))
                         .foregroundColor(.blue)
+                        .frame(width: 40, height: 40)
+                        .background(Color.blue.opacity(hoveredButton == "playPause" ? 0.1 : 0.05))
+                        .cornerRadius(8)
                 }
                 .buttonStyle(.plain)
                 .disabled(!playerManager.isReady)
+                .onHover { hovering in
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        hoveredButton = hovering ? "playPause" : nil
+                    }
+                    if hovering {
+                        NSCursor.pointingHand.push()
+                    } else {
+                        NSCursor.pop()
+                    }
+                }
                 
                 // Skip forward button
                 Button(action: {
@@ -79,9 +144,22 @@ struct AudioPlayerView: View {
                     Image(systemName: "goforward.10")
                         .font(.system(size: 18))
                         .foregroundColor(.primary)
+                        .frame(width: 28, height: 28)
+                        .background(Color.gray.opacity(hoveredButton == "skipForward" ? 0.15 : 0.05))
+                        .cornerRadius(6)
                 }
                 .buttonStyle(.plain)
                 .disabled(!playerManager.isReady)
+                .onHover { hovering in
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        hoveredButton = hovering ? "skipForward" : nil
+                    }
+                    if hovering {
+                        NSCursor.pointingHand.push()
+                    } else {
+                        NSCursor.pop()
+                    }
+                }
                 
                 Spacer()
                 
@@ -120,11 +198,21 @@ struct AudioPlayerView: View {
                         .foregroundColor(.secondary)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(Color.gray.opacity(0.1))
+                        .background(Color.gray.opacity(hoveredButton == "speedControl" ? 0.2 : 0.1))
                         .cornerRadius(4)
                 }
                 .buttonStyle(.plain)
                 .disabled(!playerManager.isReady)
+                .onHover { hovering in
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        hoveredButton = hovering ? "speedControl" : nil
+                    }
+                    if hovering {
+                        NSCursor.pointingHand.push()
+                    } else {
+                        NSCursor.pop()
+                    }
+                }
             }
         }
         .padding()
