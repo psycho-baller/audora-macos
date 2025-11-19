@@ -14,16 +14,12 @@ class SettingsViewModel: ObservableObject {
     
     /// Loads the API key from keychain (only called when actually needed)
     func loadAPIKey() {
-        if settings.openAIKey.isEmpty {
-            settings.openAIKey = KeychainHelper.shared.getAPIKey() ?? ""
-        }
+        settings.openAIKey = KeychainHelper.shared.getAPIKey() ?? ""
     }
     
     /// Loads the API key from keychain (only called when actually needed)
     func loadLicenseKey() {
-        if settings.licenseKey.isEmpty {
-            settings.licenseKey = KeychainHelper.shared.getLicenseKey() ?? ""
-        }
+        settings.licenseKey = KeychainHelper.shared.getLicenseKey() ?? ""
     }
     
     func loadTemplates() {
