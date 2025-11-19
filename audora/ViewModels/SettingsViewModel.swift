@@ -19,6 +19,13 @@ class SettingsViewModel: ObservableObject {
         }
     }
     
+    /// Loads the API key from keychain (only called when actually needed)
+    func loadLicenseKey() {
+        if settings.licenseKey.isEmpty {
+            settings.licenseKey = KeychainHelper.shared.getLicenseKey() ?? ""
+        }
+    }
+    
     func loadTemplates() {
         templates = LocalStorageManager.shared.loadTemplates()
         
@@ -53,12 +60,15 @@ class SettingsViewModel: ObservableObject {
             return
         }
 
-        // Only save API key to keychain - other values are automatically saved to UserDefaults
-        // via computed properties when they're modified
+        // Persist sensitive credentials securely in Keychain
+        // - OpenAI API key
+        // - License key
+        // All other settings are saved automatically to UserDefaults
         let openAISaved = KeychainHelper.shared.saveAPIKey(settings.openAIKey)
+        let licenseSaved = KeychainHelper.shared.saveLicenseKey(settings.licenseKey)
 
         if showMessage {
-            if openAISaved {
+            if openAISaved && licenseSaved {
                 saveMessage = "Settings saved successfully!"
             } else {
                 saveMessage = "Error saving settings"

@@ -4,6 +4,9 @@ struct Settings: Codable {
     // Only store API key in memory - will be loaded from keychain when needed
     var openAIKey: String = ""
     
+    // Only store License Key in memory - will be loaded from Keychain when needed
+    var licenseKey: String = ""
+    
     // Computed properties that access UserDefaults
     var userBlurb: String {
         get { UserDefaultsManager.shared.userBlurb }
@@ -67,12 +70,14 @@ struct Settings: Codable {
         return result
     }
     
-    init(openAIKey: String = "") {
+    init(openAIKey: String = "", licenseKey: String = "") {
         self.openAIKey = openAIKey
+        self.licenseKey = licenseKey
     }
     
     // MARK: - Codable conformance for API key only
     private enum CodingKeys: String, CodingKey {
         case openAIKey
+        case licenseKey
     }
 } 

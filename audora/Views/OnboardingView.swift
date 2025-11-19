@@ -3,6 +3,7 @@ import AVFoundation
 
 struct OnboardingView: View {
     @ObservedObject var settingsViewModel: SettingsViewModel
+    @State private var licenseKey = ""
     @State private var apiKey = ""
     @State private var hasAcceptedTerms = false
     @State private var micPermissionGranted = false
@@ -39,6 +40,32 @@ struct OnboardingView: View {
                                     isGranted: systemAudioPermissionGranted,
                                     action: requestSystemAudioPermission
                                 )
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        // License Key Section
+                        VStack(alignment: .leading, spacing: 8) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("License Key")
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+
+                                Text("Enter the license key you received after purchasing the app.")
+                                    .font(.body)
+                                    .foregroundColor(.secondary)
+                            }
+
+                            SecureField("License Key", text: $licenseKey)
+                                .textFieldStyle(.roundedBorder)
+                                .font(.body)
+
+                            HStack {
+                                Image(systemName: "info.circle")
+                                    .foregroundColor(.blue)
+                                Text("Stored locally and encrypted in Keychain.")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -130,6 +157,7 @@ struct OnboardingView: View {
                             Spacer()
                             Button("Get Started") {
                                 // Complete onboarding
+                                settingsViewModel.settings.licenseKey = licenseKey
                                 settingsViewModel.settings.openAIKey = apiKey
                                 settingsViewModel.completeOnboarding()
                             }
@@ -153,8 +181,11 @@ struct OnboardingView: View {
             Text(permissionAlertMessage)
         }
         .onAppear {
-            checkPermissions()
+            settingsViewModel.loadLicenseKey()
             settingsViewModel.loadAPIKey()
+            checkPermissions()
+            
+            licenseKey = settingsViewModel.settings.licenseKey
             apiKey = settingsViewModel.settings.openAIKey
             hasAcceptedTerms = settingsViewModel.settings.hasAcceptedTerms
         }
@@ -171,6 +202,7 @@ struct OnboardingView: View {
     private var canProceed: Bool {
         return micPermissionGranted &&
                systemAudioPermissionGranted &&
+               !licenseKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
                !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
                hasAcceptedTerms
     }
