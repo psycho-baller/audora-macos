@@ -7,6 +7,9 @@ import PostHog
 extension Notification.Name {
     static let meetingSaved = Notification.Name("MeetingSaved")
     static let meetingDeleted = Notification.Name("MeetingDeleted")
+    static let createNewRecording = Notification.Name("CreateNewRecording")
+    static let openSettings = Notification.Name("OpenSettings")
+    static let onboardingReset = Notification.Name("OnboardingReset")
 }
 
 enum MeetingViewTab: String, CaseIterable {
@@ -158,6 +161,20 @@ class MeetingViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
+        // Listen for meeting saved notifications to reload the meeting (e.g., when audioFileURL is added)
+        NotificationCenter.default.publisher(for: .meetingSaved)
+            .sink { [weak self] notification in
+                guard let self = self,
+                      let savedMeeting = notification.object as? Meeting,
+                      savedMeeting.id == self.meeting.id else { return }
+                
+                print("🔄 Reloading meeting from storage to get updated audioFileURL")
+                // Reload the meeting from storage to get the latest version with audioFileURL
+                if let latestMeeting = LocalStorageManager.shared.loadMeetings().first(where: { $0.id == self.meeting.id }) {
+                    self.meeting = latestMeeting
+                }
+            }
+            .store(in: &cancellables)
 
     }
 

@@ -1,8 +1,7 @@
 <div align="center">
-  <!-- REMOVE THIS IF YOU DON'T HAVE A LOGO -->
-    <img src="https://github.com/user-attachments/assets/309577e8-94db-431f-b8df-a53a763b4c87" alt="Logo" width="80" height="80">
+    <!-- <img src="https://github.com/user-attachments/assets/309577e8-94db-431f-b8df-a53a763b4c87" alt="Logo" width="80" height="80"> -->
 
-<h3 align="center">audora</h3>
+<h1 align="center">audora</h3>
 
   <p align="center">
     The Free, Open-Source AI Communication Coach for Busy Professionals

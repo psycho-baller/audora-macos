@@ -6,6 +6,17 @@ struct MeetingListView: View {
     @StateObject private var recordingSessionManager = RecordingSessionManager.shared
     @State private var selectedMeeting: Meeting?
     @State private var navigationPath = NavigationPath()
+    @Binding var triggerNewRecording: Bool
+    @Binding var triggerOpenSettings: Bool
+    
+    // Default initializer for use without bindings
+    init(settingsViewModel: SettingsViewModel, 
+         triggerNewRecording: Binding<Bool> = .constant(false),
+         triggerOpenSettings: Binding<Bool> = .constant(false)) {
+        self.settingsViewModel = settingsViewModel
+        self._triggerNewRecording = triggerNewRecording
+        self._triggerOpenSettings = triggerOpenSettings
+    }
     
     var body: some View {
         NavigationSplitView {
@@ -22,6 +33,15 @@ struct MeetingListView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(Color.clear)
             }
+        }
+        .onChange(of: triggerNewRecording) { _, _ in
+            // Create new recording when triggered from menu bar
+            let newMeeting = viewModel.createNewMeeting()
+            selectedMeeting = newMeeting
+        }
+        .onChange(of: triggerOpenSettings) { _, _ in
+            // Navigate to settings when triggered from menu bar
+            navigationPath.append("settings")
         }
     }
     
@@ -206,6 +226,8 @@ struct MeetingRowView: View {
 
 struct CollapsedTranscriptChunkView: View {
     let chunk: CollapsedTranscriptChunk
+    let analytics: SpeechAnalytics?
+    let activeSubtab: AnalyticsSubtab?
     
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -222,13 +244,184 @@ struct CollapsedTranscriptChunkView: View {
             }
             .frame(width: 50, alignment: .leading)
             
-            // Transcript text
-            Text(chunk.combinedText)
-                .font(.body)
-                .foregroundColor(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            // Highlighted transcript text
+            if let analytics = analytics, activeSubtab == .wordChoice {
+                HighlightedText(text: chunk.combinedText, analytics: analytics)
+                    .font(.body)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                Text(chunk.combinedText)
+                    .font(.body)
+                    .foregroundColor(.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
         .padding(.vertical, 2)
+    }
+}
+
+// MARK: - Highlighted Text View
+
+struct HighlightedText: View {
+    let text: String
+    let analytics: SpeechAnalytics
+    
+    var body: some View {
+        buildHighlightedText()
+    }
+    
+    private func buildHighlightedText() -> some View {
+        // Split text into words
+        let words = text.split(separator: " ").map { String($0) }
+        
+        // Create sets for quick lookup (use the actual words from analytics)
+        let fillerWordsSet = Set(analytics.fillerWords.instances.map { $0.word.lowercased() })
+        let repeatedWordsSet = Set(analytics.repetitions.repeatedWords.map { $0.word.lowercased() })
+        let weakStartersSet = Set(analytics.sentenceStarters.weak.map { $0.word.lowercased() })
+        
+        return WrappingHStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(words.enumerated()), id: \.offset) { index, word in
+                let cleanWord = word.lowercased().trimmingCharacters(in: .punctuationCharacters)
+                let highlightType = determineHighlightType(
+                    word: cleanWord,
+                    index: index,
+                    words: words,
+                    fillerWordsSet: fillerWordsSet,
+                    repeatedWordsSet: repeatedWordsSet,
+                    weakStartersSet: weakStartersSet
+                )
+                
+                HStack(spacing: 0) {
+                    if index > 0 {
+                        Text(" ")
+                    }
+                    
+                    if let type = highlightType {
+                        Text(word)
+                            .background(type.color.opacity(0.3))
+                    } else {
+                        Text(word)
+                    }
+                }
+            }
+        }
+    }
+    
+    private func determineHighlightType(
+        word: String,
+        index: Int,
+        words: [String],
+        fillerWordsSet: Set<String>,
+        repeatedWordsSet: Set<String>,
+        weakStartersSet: Set<String>
+    ) -> HighlightType? {
+        // Check for filler words (highest priority)
+        if fillerWordsSet.contains(word) {
+            return .fillerWord
+        }
+        // Check for repeated words
+        else if repeatedWordsSet.contains(word) {
+            return .repeatedWord
+        }
+        // Check for weak sentence starters
+        else if index == 0 || (index > 0 && (words[index-1].hasSuffix(".") || words[index-1].hasSuffix("!") || words[index-1].hasSuffix("?"))) {
+            if weakStartersSet.contains(word) {
+                return .weakStarter
+            }
+        }
+        
+        return nil
+    }
+    
+    enum HighlightType {
+        case fillerWord
+        case repeatedWord
+        case weakStarter
+        
+        var color: Color {
+            switch self {
+            case .fillerWord:
+                return .blue
+            case .repeatedWord:
+                return .orange
+            case .weakStarter:
+                return .yellow
+            }
+        }
+    }
+}
+
+// MARK: - Wrapping HStack
+
+struct WrappingHStack: Layout {
+    var alignment: Alignment = .leading
+    var spacing: CGFloat = 8
+    
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let result = arrangeViews(proposal: proposal, subviews: subviews)
+        return result.size
+    }
+    
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let arrangement = arrangeViews(proposal: proposal, subviews: subviews)
+        
+        for (index, position) in arrangement.positions.enumerated() {
+            subviews[index].place(
+                at: CGPoint(x: bounds.minX + position.x, y: bounds.minY + position.y),
+                proposal: ProposedViewSize(arrangement.sizes[index])
+            )
+        }
+    }
+    
+    private func arrangeViews(proposal: ProposedViewSize, subviews: Subviews) -> (size: CGSize, positions: [CGPoint], sizes: [CGSize]) {
+        var positions: [CGPoint] = []
+        var sizes: [CGSize] = []
+        var currentX: CGFloat = 0
+        var currentY: CGFloat = 0
+        var lineHeight: CGFloat = 0
+        var totalWidth: CGFloat = 0
+        
+        let maxWidth = proposal.width ?? .infinity
+        
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            
+            // Check if we need to wrap to next line
+            if currentX + size.width > maxWidth && currentX > 0 {
+                currentX = 0
+                currentY += lineHeight + spacing
+                lineHeight = 0
+            }
+            
+            positions.append(CGPoint(x: currentX, y: currentY))
+            sizes.append(size)
+            
+            currentX += size.width
+            lineHeight = max(lineHeight, size.height)
+            totalWidth = max(totalWidth, currentX)
+        }
+        
+        let totalHeight = currentY + lineHeight
+        return (CGSize(width: totalWidth, height: totalHeight), positions, sizes)
+    }
+}
+
+// MARK: - Legend Item
+
+struct LegendItem: View {
+    let color: Color
+    let label: String
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            Rectangle()
+                .fill(color.opacity(0.3))
+                .frame(width: 12, height: 12)
+                .cornerRadius(2)
+            
+            Text(label)
+                .foregroundColor(.secondary)
+        }
     }
 }
 
@@ -236,8 +429,6 @@ struct MeetingDetailContentView: View {
     @StateObject private var viewModel: MeetingViewModel
     @StateObject private var recordingSessionManager = RecordingSessionManager.shared
     @State private var showDeleteAlert = false
-    @State private var isEditing = false
-    @State private var showCopyConfirmation = false
     let onDelete: () -> Void
     
     init(meeting: Meeting, onDelete: @escaping () -> Void) {
@@ -251,185 +442,18 @@ struct MeetingDetailContentView: View {
         return recordingSessionManager.isRecording && !recordingSessionManager.isRecordingMeeting(viewModel.meeting.id)
     }
     
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-
-            VStack(alignment: .leading, spacing: 8) {
-                // Meeting Title with Menu
-                HStack {
-                    TextField("Meeting Title", text: $viewModel.meeting.title)
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                        .textFieldStyle(.plain)
-                    
-                    Spacer()
-                    
-                    // Ellipsis menu
-                    Menu {
-                        Button("Delete Meeting", role: .destructive) {
-                            showDeleteAlert = true
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 12, height: 12)
-                            .foregroundColor(.secondary)
-                    }
-                    .labelStyle(.iconOnly)
-                    .menuIndicator(.hidden)
-                    .menuStyle(BorderlessButtonMenuStyle())
-                    .frame(width: 20, height: 20)
-                }
-                .padding(.bottom, 10)
-                
-                // Controls Section
-                HStack {
-                    // Left: Tab Toggles
-                    Picker("", selection: $viewModel.selectedTab) {
-                        ForEach(MeetingViewTab.allCases, id: \.self) { tab in
-                            Text(tab.rawValue).tag(tab)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(maxWidth: 260)
-                    
-                    Spacer()
-                    
-                    // Right: Generate and Recording Buttons
-                    HStack(spacing: 8) {
-                        // Generate Button (Dropdown)
-                        Menu {
-                            ForEach(viewModel.templates) { template in
-                                Button(template.title) {
-                                    viewModel.selectedTemplateId = template.id
-                                    viewModel.selectedTab = .enhancedNotes
-                                    isEditing = false
-                                }
-                            }
-                        } label: {
-                            HStack(spacing: 4) {
-                                if viewModel.isGeneratingNotes {
-                                    ProgressView()
-                                        .scaleEffect(0.4)
-                                        .frame(width: 12, height: 12)
-                                } else {
-                                    Image(systemName: "sparkles")
-                                        .font(.caption)
-                                }
-                                Text("Generate")
-                            }
-                            .frame(minWidth: 110, minHeight: 36)
-                            .background(Color.green.opacity(0.1))
-                            .cornerRadius(8)
-                            .overlay(
-                                // Shimmer overlay when ready
-                                Group {
-                                    if viewModel.shouldAnimateGenerateButton {
-                                        ShimmerOverlay(color: .green)
-                                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                                    }
-                                }
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(viewModel.meeting.transcript.isEmpty || viewModel.isGeneratingNotes || viewModel.isRecording || viewModel.isStartingRecording)
-                        .help("Generate enhanced notes using a template")
-                        
-                        // Recording Button
-                        Button(action: {
-                            viewModel.toggleRecording()
-                        }) {
-                            HStack(spacing: 4) {
-                                Image(systemName: viewModel.isRecording ? "stop.circle.fill" : "record.circle")
-                                    .foregroundColor(viewModel.isRecording ? .red : .accentColor)
-                                Text(viewModel.recordingButtonText)
-                            }
-                            .frame(minWidth: 110, minHeight: 36)
-                            .background(viewModel.isRecording ? Color.red.opacity(0.1) : Color.accentColor.opacity(0.1))
-                            .cornerRadius(8)
-                            .overlay(
-                                // Shimmer overlay when ready to transcribe
-                                Group {
-                                    if viewModel.shouldAnimateTranscribeButton {
-                                        ShimmerOverlay(color: .accentColor)
-                                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                                    }
-                                }
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(cannotStartRecording || viewModel.isValidatingKey || viewModel.isStartingRecording)
-                        .help(cannotStartRecording ? "Another meeting is currently being recorded" : "Start or stop recording for this meeting")
-                    }
-                }
-            }
+        HSplitView {
+            // Middle Column: Audio Player + Transcript
+            middleColumn
+                .frame(minWidth: 400, idealWidth: 500)
             
-            // Content Area with Tab-specific Headers
-            VStack(alignment: .leading, spacing: 8) {
-                // Tab Header with Copy and Edit buttons
-                HStack(spacing: 8) {
-                    Text(viewModel.selectedTab.rawValue)
-                        .font(.headline)
-                        .foregroundColor(.secondary)
-                    
-                    Spacer()
-                    
-                    // Edit/Preview button (for My Notes and Enhanced Notes)
-                    if viewModel.selectedTab == .myNotes || viewModel.selectedTab == .enhancedNotes {
-                        Button(action: {
-                            isEditing.toggle()
-                        }) {
-                            HStack(spacing: 4) {
-                                Image(systemName: isEditing ? "eye" : "pencil")
-                                Text(isEditing ? "Preview" : "Edit")
-                            }
-                            .frame(minWidth: 75, minHeight: 24)
-                            .font(.caption)
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(6)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    
-                    // Copy button
-                    Button(action: {
-                        viewModel.copyCurrentTabContent()
-                        showCopyConfirmation = true
-                        
-                        // Reset confirmation after 1 second
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                            showCopyConfirmation = false
-                        }
-                    }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: showCopyConfirmation ? "checkmark.circle.fill" : "doc.on.doc")
-                                .foregroundColor(showCopyConfirmation ? .green : .primary)
-                            Text(showCopyConfirmation ? "Copied!" : "Copy")
-                                .foregroundColor(showCopyConfirmation ? .green : .primary)
-                        }
-                        .frame(minWidth: 70, minHeight: 24)
-                        .font(.caption)
-                        .background(showCopyConfirmation ? Color.green.opacity(0.1) : Color.gray.opacity(0.1))
-                        .cornerRadius(6)
-                    }
-                    .buttonStyle(.plain)
-                }
-                
-                // Tab Content
-                switch viewModel.selectedTab {
-                case .analytics:
-                    analyticsView
-                case .myNotes:
-                    myNotesView
-                case .transcript:
-                    transcriptView
-                case .enhancedNotes:
-                    enhancedNotesView
-                }
-            }
-            .frame(maxHeight: .infinity)
+            // Right Column: Analytics Panel
+            rightColumn
+                .frame(minWidth: 350, idealWidth: 400)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
         .alert("Error", isPresented: .constant(viewModel.errorMessage != nil)) {
             Button("OK") {
@@ -453,102 +477,186 @@ struct MeetingDetailContentView: View {
         }
     }
     
-    // MARK: - Content Views
+    // MARK: - Middle Column
     
-    private var myNotesView: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if isEditing {
-                TextEditor(text: $viewModel.meeting.userNotes)
-                    .font(.body)
-                    .padding(8)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.gray.opacity(0.05))
-                    .cornerRadius(8)
-                    .frame(maxHeight: .infinity)
-            } else {
-                ScrollView {
-                    Text(viewModel.meeting.userNotes.isEmpty ? "No notes yet..." : viewModel.meeting.userNotes)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding()
-                        .foregroundColor(viewModel.meeting.userNotes.isEmpty ? .secondary : .primary)
+    private var middleColumn: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Header with title and controls
+            headerSection
+            
+            // Audio Player (fixed at top)
+            if let audioFileURLString = viewModel.meeting.audioFileURL {
+                AudioPlayerView(audioURL: URL(fileURLWithPath: audioFileURLString))
+            }
+            
+            // Transcript Section
+            transcriptSection
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    private var headerSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Title and Menu
+            HStack {
+                TextField("Meeting Title", text: $viewModel.meeting.title)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .textFieldStyle(.plain)
+                
+                Spacer()
+                
+                // Ellipsis menu
+                Menu {
+                    Button("Delete Meeting", role: .destructive) {
+                        showDeleteAlert = true
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 12, height: 12)
+                        .foregroundColor(.secondary)
                 }
-                .frame(maxHeight: .infinity)
-                .background(Color.gray.opacity(0.05))
-                .cornerRadius(8)
+                .labelStyle(.iconOnly)
+                .menuIndicator(.hidden)
+                .menuStyle(BorderlessButtonMenuStyle())
+                .frame(width: 20, height: 20)
+            }
+            
+            // Controls: Generate and Recording Buttons
+            HStack(spacing: 8) {
+                // Generate Button (Dropdown)
+                Menu {
+                    ForEach(viewModel.templates) { template in
+                        Button(template.title) {
+                            viewModel.selectedTemplateId = template.id
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        if viewModel.isGeneratingNotes {
+                            ProgressView()
+                                .scaleEffect(0.4)
+                                .frame(width: 12, height: 12)
+                        } else {
+                            Image(systemName: "sparkles")
+                                .font(.caption)
+                        }
+                        Text("Generate")
+                    }
+                    .frame(minWidth: 110, minHeight: 36)
+                    .background(Color.green.opacity(0.1))
+                    .cornerRadius(8)
+                    .overlay(
+                        Group {
+                            if viewModel.shouldAnimateGenerateButton {
+                                ShimmerOverlay(color: .green)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+                        }
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(viewModel.meeting.transcript.isEmpty || viewModel.isGeneratingNotes || viewModel.isRecording || viewModel.isStartingRecording)
+                .help("Generate enhanced notes using a template")
+                
+                // Recording Button
+                Button(action: {
+                    viewModel.toggleRecording()
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: viewModel.isRecording ? "stop.circle.fill" : "record.circle")
+                            .foregroundColor(viewModel.isRecording ? .red : .accentColor)
+                        Text(viewModel.recordingButtonText)
+                    }
+                    .frame(minWidth: 110, minHeight: 36)
+                    .background(viewModel.isRecording ? Color.red.opacity(0.1) : Color.accentColor.opacity(0.1))
+                    .cornerRadius(8)
+                    .overlay(
+                        Group {
+                            if viewModel.shouldAnimateTranscribeButton {
+                                ShimmerOverlay(color: .accentColor)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+                        }
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(cannotStartRecording || viewModel.isValidatingKey || viewModel.isStartingRecording)
+                .help(cannotStartRecording ? "Another meeting is currently being recorded" : "Start or stop recording for this meeting")
+                
+                Spacer()
             }
         }
     }
     
-    private var analyticsView: some View {
-        VStack {
-            if let analytics = viewModel.meeting.analytics {
-                AnalyticsView(analytics: analytics)
-                    .background(Color.gray.opacity(0.05))
-                    .cornerRadius(8)
-                    .frame(maxHeight: .infinity)
-            } else {
-                VStack(spacing: 16) {
-                    Image(systemName: "chart.bar.xaxis")
-                        .font(.system(size: 48))
-                        .foregroundColor(.secondary)
-                    
-                    Text("No Analytics Available")
-                        .font(.headline)
-                        .foregroundColor(.secondary)
-                    
-                    Text("Analytics will be generated automatically when you finish recording.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.gray.opacity(0.05))
-                .cornerRadius(8)
-            }
-        }
-    }
-    
-    private var transcriptView: some View {
-        ScrollView {
-            if viewModel.meeting.collapsedTranscriptChunks.isEmpty {
-                Text("Transcript will appear here...")
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
+    private var transcriptSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Transcript Header
+            HStack {
+                Text("Transcript")
+                    .font(.headline)
                     .foregroundColor(.secondary)
-            } else {
-                LazyVStack(alignment: .leading, spacing: 4) {
-                    ForEach(viewModel.meeting.collapsedTranscriptChunks) { chunk in
-                        CollapsedTranscriptChunkView(chunk: chunk)
+                
+                Spacer()
+            }
+            
+            // Transcript Content
+            VStack(alignment: .leading, spacing: 8) {
+                // Color legend (only show when Word Choice subtab is active)
+                if activeAnalyticsSubtab == .wordChoice, viewModel.meeting.analytics != nil {
+                    HStack(spacing: 12) {
+                        LegendItem(color: .blue, label: "Filler Words")
+                        LegendItem(color: .orange, label: "Repeated Words")
+                        LegendItem(color: .yellow, label: "Weak Starters")
+                    }
+                    .font(.caption)
+                    .padding(.horizontal, 4)
+                }
+                
+                ScrollView {
+                    if viewModel.meeting.collapsedTranscriptChunks.isEmpty {
+                        Text("Transcript will appear here...")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding()
+                            .foregroundColor(.secondary)
+                    } else {
+                        LazyVStack(alignment: .leading, spacing: 4) {
+                            ForEach(viewModel.meeting.collapsedTranscriptChunks) { chunk in
+                                CollapsedTranscriptChunkView(
+                                    chunk: chunk,
+                                    analytics: viewModel.meeting.analytics,
+                                    activeSubtab: activeAnalyticsSubtab
+                                )
+                            }
+                        }
+                        .padding()
                     }
                 }
-                .padding()
+                .frame(maxHeight: .infinity)
             }
+            .background(Color.gray.opacity(0.05))
+            .cornerRadius(8)
         }
-        .frame(maxHeight: .infinity)
-        .background(Color.gray.opacity(0.05))
-        .cornerRadius(8)
     }
     
-    private var enhancedNotesView: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if isEditing {
-                TextEditor(text: Binding(
-                    get: { viewModel.meeting.generatedNotes },
-                    set: { viewModel.meeting.generatedNotes = $0 }
-                ))
-                    .font(.body)
-                    .padding(8)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.gray.opacity(0.05))
-                    .cornerRadius(8)
-                    .frame(maxHeight: .infinity)
-            } else {
-                RenderedNotesView(text: viewModel.meeting.generatedNotes)
-                    .font(.body)
-                    .background(Color.gray.opacity(0.05))
-                    .cornerRadius(8)
-                    .frame(maxHeight: .infinity)
+    // MARK: - Right Column
+    
+    @State private var activeAnalyticsSubtab: AnalyticsSubtab? = nil
+    
+    private var rightColumn: some View {
+        AnalyticsPanelView(
+            analytics: viewModel.meeting.analytics,
+            onSubtabChange: { subtab in
+                activeAnalyticsSubtab = subtab
+            }
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear {
+            // Initialize with Word Choice subtab when analytics are available
+            if viewModel.meeting.analytics != nil {
+                activeAnalyticsSubtab = .wordChoice
             }
         }
     }

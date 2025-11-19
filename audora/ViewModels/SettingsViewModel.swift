@@ -90,6 +90,6 @@ class SettingsViewModel: ObservableObject {
         
         // Force app to restart or recreate views by posting a notification
         // This will cause ContentView to re-evaluate and show onboarding
-        NotificationCenter.default.post(name: Notification.Name("OnboardingReset"), object: nil)
+        NotificationCenter.default.post(name: .onboardingReset, object: nil)
     }
 } 
