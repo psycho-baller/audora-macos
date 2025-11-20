@@ -124,3 +124,8 @@ APIKeys.swift
 .env.local
 
 releases/
+# Xcode
+audora.entitlements
+audora.xcodeproj/project.pbxproj
+audora.xcodeproj/xcshareddata/xcschemes/Audora.xcscheme
+audora.xcodeproj/xcuserdata/
