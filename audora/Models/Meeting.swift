@@ -106,11 +106,12 @@ struct TranscriptionSession: Codable, Identifiable, Hashable {
     var templateId: UUID?  // Template used for this session
     var source: TranscriptionSource  // How this session was created
     var analytics: SpeechAnalytics?  // Speech analytics for this session
+    var audioFileURL: String?  // Path to the saved audio recording file
     // MARK: - Data versioning
     /// Version of this TranscriptionSession record on disk. Useful for migration.
     var dataVersion: Int
     /// Current app data version. Increment whenever you make a breaking change to `TranscriptionSession` that requires migration.
-    static let currentDataVersion = 3  // Incremented for analytics addition
+    static let currentDataVersion = 4  // Incremented for audio file support
     
     init(id: UUID = UUID(),
          date: Date = Date(),
@@ -121,6 +122,7 @@ struct TranscriptionSession: Codable, Identifiable, Hashable {
          templateId: UUID? = nil,
          source: TranscriptionSource = .manual,
          analytics: SpeechAnalytics? = nil,
+         audioFileURL: String? = nil,
          dataVersion: Int = TranscriptionSession.currentDataVersion) {
         self.id = id
         self.date = date
@@ -131,6 +133,7 @@ struct TranscriptionSession: Codable, Identifiable, Hashable {
         self.templateId = templateId
         self.source = source
         self.analytics = analytics
+        self.audioFileURL = audioFileURL
         self.dataVersion = dataVersion
     }
     

@@ -24,6 +24,7 @@ class AudioManager: NSObject, ObservableObject {
     private var systemSocketTask: URLSessionWebSocketTask?
     private let realtimeURL = URL(string: "wss://api.openai.com/v1/realtime?intent=transcription")!
 
+
     // Unique identifier for the current recording session
     private var sessionID = UUID()
 
@@ -271,6 +272,9 @@ class AudioManager: NSObject, ObservableObject {
                     }
                 }
 
+                // Record audio buffer
+                AudioRecordingManager.shared.recordMicBuffer(buffer, format: recordingFormat)
+
                 // Track activity for mic following mode
                 self.activityTracker?.onAudioBuffer(buffer)
 
@@ -475,6 +479,9 @@ class AudioManager: NSObject, ObservableObject {
                     AudioLevelManager.shared.updateSystemLevel(rms)
                 }
             }
+
+            // Record audio buffer
+            AudioRecordingManager.shared.recordSystemBuffer(buffer, format: format)
 
             self.processAudioBuffer(buffer, converter: converter, targetFormat: targetFormat, source: .system)
 

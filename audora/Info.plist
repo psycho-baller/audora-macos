@@ -4,8 +4,6 @@
 <dict>
 	<key>NSAudioCaptureUsageDescription</key>
 	<string>Audora captures audio for transcription. The mic following feature records only when other apps are using the microphone.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Audora captures microphone audio for transcription. Mic following mode records your microphone ONLY when other apps are actively using it.</string>
 	<key>SUEnableInstallerLauncherService</key>
 	<true/>
 	<key>SUFeedURL</key>

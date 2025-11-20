@@ -71,6 +71,9 @@ class RecordingSessionManager: ObservableObject {
             audioManager.transcriptChunks = existingMeeting.transcriptChunks
         }
         
+        // Start audio recording
+        AudioRecordingManager.shared.startRecording(for: meetingId)
+        
         activeMeetingId = meetingId
         audioManager.startRecording()
     }
@@ -80,9 +83,17 @@ class RecordingSessionManager: ObservableObject {
         
         audioManager.stopRecording()
         
-        // Perform a final, immediate save of transcript chunks to the meeting
+        // Save audio file and update meeting
+        var audioFileURL: String? = nil
         if let activeMeetingId = activeMeetingId {
-            updateActiveMeetingTranscript(meetingId: activeMeetingId, chunks: activeRecordingTranscriptChunks)
+            // Stop recording and get the audio file URL
+            if let savedAudioURL = AudioRecordingManager.shared.stopRecordingAndSave(for: activeMeetingId) {
+                audioFileURL = savedAudioURL.path
+                print("✅ Audio file saved: \(savedAudioURL.path)")
+            }
+            
+            // Update meeting with transcript and audio file URL
+            updateActiveMeeting(meetingId: activeMeetingId, chunks: activeRecordingTranscriptChunks, audioFileURL: audioFileURL)
         }
         
         activeMeetingId = nil
@@ -94,20 +105,27 @@ class RecordingSessionManager: ObservableObject {
     }
     
     private func updateActiveMeetingTranscript(meetingId: UUID, chunks: [TranscriptChunk]) {
+        updateActiveMeeting(meetingId: meetingId, chunks: chunks, audioFileURL: nil)
+    }
+    
+    private func updateActiveMeeting(meetingId: UUID, chunks: [TranscriptChunk], audioFileURL: String?) {
         // Load all meetings
         var meetings = LocalStorageManager.shared.loadMeetings()
         
         // Find and update the active meeting
         if let index = meetings.firstIndex(where: { $0.id == meetingId }) {
             meetings[index].transcriptChunks = chunks
+            if let audioFileURL = audioFileURL {
+                meetings[index].audioFileURL = audioFileURL
+            }
             
             // Save the updated meeting
             let success = LocalStorageManager.shared.saveMeeting(meetings[index])
             if success {
-                print("✅ Saved meeting transcript: \(meetingId.uuidString)")
+                print("✅ Saved meeting: \(meetingId.uuidString)")
                 NotificationCenter.default.post(name: .meetingSaved, object: meetings[index])
             } else {
-                print("❌ Failed to save meeting transcript: \(meetingId.uuidString)")
+                print("❌ Failed to save meeting: \(meetingId.uuidString)")
             }
         }
     }
