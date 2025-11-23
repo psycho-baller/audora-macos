@@ -495,7 +495,9 @@ struct MeetingDetailContentView: View {
             headerSection
             
             // Audio Player (fixed at top)
-            AudioPlayerView(audioURL: audioFileURL)
+            if let audioFileURLString = viewModel.meeting.audioFileURL {
+                AudioPlayerView(audioURL: URL(fileURLWithPath: audioFileURLString))
+            }
             
             // Transcript Section
             transcriptSection

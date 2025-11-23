@@ -121,6 +121,10 @@ class LocalStorageManager {
         
         do {
             try FileManager.default.removeItem(at: fileURL)
+            
+            // Also delete associated audio file
+            AudioRecordingManager.shared.deleteAudioFiles(for: meeting.id)
+            
             print("✅ Deleted meeting: \(meeting.id)")
             return true
         } catch {

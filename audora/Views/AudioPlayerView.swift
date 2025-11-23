@@ -1,6 +1,7 @@
 import SwiftUI
 import AVFoundation
 import AppKit
+import Combine
 
 struct AudioPlayerView: View {
     @StateObject private var playerManager = AudioPlayerManager()
@@ -8,6 +9,8 @@ struct AudioPlayerView: View {
     @State private var hoveredButton: String? = nil
     @State private var isHoveringProgressBar = false
     @State private var dragStartProgress: Double = 0
+    @State private var fileModificationDate: Date?
+    @State private var cancellables = Set<AnyCancellable>()
     
     var body: some View {
         Group {
@@ -15,6 +18,21 @@ struct AudioPlayerView: View {
                 audioPlayerContent(audioURL: audioURL)
             } else {
                 placeholderContent
+            }
+        }
+        .onChange(of: audioURL) { _ in
+            if let url = audioURL {
+                updateFileModificationDate(for: url)
+                playerManager.loadAudio(url: url)
+            } else {
+                fileModificationDate = nil
+                playerManager.cleanup()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .meetingSaved)) { notification in
+            // Reload audio if the file was updated
+            if let url = audioURL, FileManager.default.fileExists(atPath: url.path) {
+                checkAndReloadIfFileUpdated(url: url)
             }
         }
     }
@@ -115,6 +133,8 @@ struct AudioPlayerView: View {
                 
                 // Play/Pause button
                 Button(action: {
+                    // Check if file was updated before toggling playback
+                    checkAndReloadIfFileUpdated(url: audioURL)
                     playerManager.togglePlayback()
                 }) {
                     Image(systemName: playerManager.isPlaying ? "pause.circle.fill" : "play.circle.fill")
@@ -213,12 +233,37 @@ struct AudioPlayerView: View {
                         NSCursor.pop()
                     }
                 }
+                
+                // Folder button
+                Button(action: {
+                    openAudioFolder(url: audioURL)
+                }) {
+                    Image(systemName: "folder")
+                        .font(.system(size: 16))
+                        .foregroundColor(.secondary)
+                        .frame(width: 28, height: 28)
+                        .background(Color.gray.opacity(hoveredButton == "folder" ? 0.15 : 0.05))
+                        .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+                .disabled(!playerManager.isReady)
+                .onHover { hovering in
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        hoveredButton = hovering ? "folder" : nil
+                    }
+                    if hovering {
+                        NSCursor.pointingHand.push()
+                    } else {
+                        NSCursor.pop()
+                    }
+                }
             }
         }
         .padding()
         .background(Color.gray.opacity(0.05))
         .cornerRadius(12)
         .onAppear {
+            updateFileModificationDate(for: audioURL)
             playerManager.loadAudio(url: audioURL)
         }
         .onDisappear {
@@ -240,6 +285,43 @@ struct AudioPlayerView: View {
         }
         .background(Color.gray.opacity(0.05))
         .cornerRadius(12)
+    }
+    
+    private func updateFileModificationDate(for url: URL) {
+        if let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+           let modificationDate = attributes[.modificationDate] as? Date {
+            fileModificationDate = modificationDate
+        }
+    }
+    
+    private func checkAndReloadIfFileUpdated(url: URL) {
+        guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+              let currentModificationDate = attributes[.modificationDate] as? Date else {
+            return
+        }
+        
+        // If file was modified since we last checked, reload it
+        if let lastKnownDate = fileModificationDate, currentModificationDate > lastKnownDate {
+            print("🔄 Audio file updated (was \(lastKnownDate), now \(currentModificationDate)), reloading...")
+            fileModificationDate = currentModificationDate
+            // Preserve playback state
+            let wasPlaying = playerManager.isPlaying
+            playerManager.loadAudio(url: url)
+            // Resume playback if it was playing
+            if wasPlaying {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    playerManager.togglePlayback()
+                }
+            }
+        } else if fileModificationDate == nil {
+            // First time checking, just update the date
+            fileModificationDate = currentModificationDate
+        }
+    }
+    
+    private func openAudioFolder(url: URL) {
+        let folderURL = url.deletingLastPathComponent()
+        NSWorkspace.shared.open(folderURL)
     }
 }
 

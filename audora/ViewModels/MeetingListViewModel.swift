@@ -35,11 +35,21 @@ class MeetingListViewModel: ObservableObject {
     init() {
         loadMeetings()
         
-        // Listen for saved meeting notifications to refresh the list
+        // Listen for saved meeting notifications to update the specific meeting in the list
         NotificationCenter.default.publisher(for: .meetingSaved)
-            .sink { [weak self] _ in
-                print("🔔 Meeting saved notification received. Reloading meetings list...")
-                self?.loadMeetings()
+            .sink { [weak self] notification in
+                guard let self = self,
+                      let savedMeeting = notification.object as? Meeting else { return }
+                
+                // Update the specific meeting in the list without triggering a full reload
+                if let index = self.meetings.firstIndex(where: { $0.id == savedMeeting.id }) {
+                    print("🔄 Updating meeting in list: \(savedMeeting.id)")
+                    self.meetings[index] = savedMeeting
+                } else {
+                    // If meeting not in list, it might be new - reload to be safe
+                    print("🔔 Meeting not found in list, reloading...")
+                    self.loadMeetings()
+                }
             }
             .store(in: &cancellables)
         
