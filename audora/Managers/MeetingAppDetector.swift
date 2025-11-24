@@ -11,10 +11,15 @@ class MeetingAppDetector: ObservableObject {
 
     private var micMonitor: MicActivityMonitor?
     private var appMonitor: FrontmostAppMonitor?
+    // private var audioMonitor: AppAudioLevelMonitor? // Removed
     private var cancellables = Set<AnyCancellable>()
 
+    private let windowController = MeetingReminderWindowController()
+
+    // Callback to open settings from SwiftUI context
+    var onOpenSettings: (() -> Void)?
+
     // Known meeting apps and browsers
-    // This list can be expanded
     public let knownMeetingApps: Set<String> = [
         "us.zoom.xos",              // Zoom
         "com.microsoft.teams",      // Microsoft Teams
@@ -32,30 +37,17 @@ class MeetingAppDetector: ObservableObject {
     private init() {}
 
     func startMonitoring() {
-        // Check and request notification permission
-        UNUserNotificationCenter.current().getNotificationSettings { settings in
-            switch settings.authorizationStatus {
-            case .notDetermined:
-                UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, error in
-                    if let error = error {
-                        print("❌ Error requesting notification permission: \(error)")
-                    } else if granted {
-                        print("✅ Notification permission granted")
-                    } else {
-                        print("🚫 Notification permission denied by user")
-                    }
-                }
-            case .denied:
-                print("🚫 Notification permission is DENIED. Please enable it in System Settings -> Notifications -> Audora.")
-            case .authorized, .provisional, .ephemeral:
-                print("✅ Notification permission already granted")
-            @unknown default:
-                break
-            }
-        }
-
         micMonitor = MicActivityMonitor()
         appMonitor = FrontmostAppMonitor()
+
+        // Listen for recording state changes to hide window
+        AudioManager.shared.$isRecording
+            .sink { [weak self] isRecording in
+                if isRecording {
+                    self?.windowController.hide()
+                }
+            }
+            .store(in: &cancellables)
 
         // Combine mic activity and frontmost app
         micMonitor?.$isMicActive
@@ -70,15 +62,17 @@ class MeetingAppDetector: ObservableObject {
         micMonitor = nil
         appMonitor = nil
         cancellables.removeAll()
+        windowController.hide()
     }
 
     private func handleStateChange(isMicActive: Bool, frontmostApp: NSRunningApplication?) {
         print("🔄 State update - Mic: \(isMicActive), App: \(frontmostApp?.localizedName ?? "nil")")
 
         guard isMicActive, let app = frontmostApp, let bundleID = app.bundleIdentifier else {
-            // If mic is off or no app, clear detected apps
+            // If mic is off or no app, clear detected apps and stop monitoring
             if !detectedMeetingApps.isEmpty {
                 detectedMeetingApps.removeAll()
+                windowController.hide() // Hide window if meeting ends
             }
             return
         }
@@ -87,18 +81,19 @@ class MeetingAppDetector: ObservableObject {
         if knownMeetingApps.contains(bundleID) {
             print("🎯 Meeting app active with mic: \(bundleID)")
 
-            // If this is a new detection
+            // If this is a new detection, check and notify
             if !detectedMeetingApps.contains(bundleID) {
                 detectedMeetingApps.insert(bundleID)
                 checkAndNotify(app: app)
             }
         } else {
             // Frontmost app is not a meeting app, but mic is on.
-            // We might want to clear detected apps if we only care about the *frontmost* one.
-            // For now, let's clear it to be strict.
             detectedMeetingApps.removeAll()
+            windowController.hide()
         }
     }
+
+    // verifyAudioOutput and stopAudioMonitoring removed
 
     private func checkAndNotify(app: NSRunningApplication) {
         let bundleID = app.bundleIdentifier ?? "unknown"
@@ -122,24 +117,43 @@ class MeetingAppDetector: ObservableObject {
             return
         }
 
-        // 4. Send notification
-        sendNotification(appName: app.localizedName ?? bundleID)
+        // 4. Show UI Overlay
+        showOverlay(for: app)
     }
 
-    private func sendNotification(appName: String) {
-        let content = UNMutableNotificationContent()
-        content.title = "Meeting Detected"
-        content.body = "It looks like you're in a meeting with \(appName). Start recording?"
-        content.sound = .default
+    private func showOverlay(for app: NSRunningApplication) {
+        let appName = app.localizedName ?? "Unknown App"
+        let bundleID = app.bundleIdentifier ?? ""
 
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+        print("🎨 Showing overlay for: \(appName) (\(bundleID))")
 
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("❌ Error scheduling notification: \(error)")
-            } else {
-                print("📨 Notification scheduled for \(appName)")
-            }
+        DispatchQueue.main.async {
+            self.windowController.show(
+                appName: appName,
+                onRecord: {
+                    print("🔴 User clicked Record from overlay - Creating new meeting")
+                    self.windowController.hide()
+                    NotificationCenter.default.post(name: .createNewRecording, object: nil)
+                },
+                onIgnore: {
+                    print("🚫 User clicked Ignore from overlay for: \(bundleID)")
+                    Task { @MainActor in
+                        var ignoredApps = UserDefaultsManager.shared.ignoredAppBundleIDs
+                        ignoredApps.insert(bundleID)
+                        UserDefaultsManager.shared.ignoredAppBundleIDs = ignoredApps
+                        print("✅ Added \(bundleID) to ignored apps. Current ignored: \(ignoredApps)")
+                    }
+                },
+                onSettings: {
+                    print("⚙️ User clicked Settings from overlay")
+                    Task { @MainActor in
+                        self.onOpenSettings?()
+                        if self.onOpenSettings == nil {
+                            print("⚠️ onOpenSettings callback is nil!")
+                        }
+                    }
+                }
+            )
         }
     }
 }

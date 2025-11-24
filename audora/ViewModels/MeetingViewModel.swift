@@ -161,6 +161,22 @@ class MeetingViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
+        // Listen for external meeting updates (e.g., browser context title update)
+        NotificationCenter.default.publisher(for: .meetingSaved)
+            .compactMap { $0.object as? Meeting }
+            .filter { [weak self] savedMeeting in
+                // Only process if it's for this meeting and not from our own save
+                savedMeeting.id == self?.meeting.id
+            }
+            .sink { [weak self] savedMeeting in
+                guard let self = self else { return }
+                // Only update title if it changed (prevents overwriting user edits)
+                if savedMeeting.title != self.meeting.title {
+                    print("🔄 External title update detected: '\(savedMeeting.title)'")
+                    self.meeting.title = savedMeeting.title
+                }
+            }
+            .store(in: &cancellables)
 
     }
 
@@ -210,31 +226,31 @@ class MeetingViewModel: ObservableObject {
 
     func stopRecording() {
         recordingSessionManager.stopRecording()
-        
+
         // Calculate analytics after stopping recording
         calculateAnalytics()
-        
+
         saveMeeting()
     }
-    
+
     /// Calculate speech analytics from transcript chunks
     private func calculateAnalytics() {
         guard !meeting.transcriptChunks.isEmpty else {
             print("⚠️ No transcript chunks to analyze")
             return
         }
-        
+
         // Calculate duration in minutes
         let chunks = meeting.transcriptChunks
         guard let firstChunk = chunks.first, let lastChunk = chunks.last else {
             return
         }
-        
+
         let durationSeconds = lastChunk.timestamp.timeIntervalSince(firstChunk.timestamp)
         let durationMinutes = max(durationSeconds / 60.0, 0.1) // Minimum 0.1 minutes
-        
+
         print("📊 Calculating analytics for \(chunks.count) chunks, duration: \(String(format: "%.1f", durationMinutes)) min")
-        
+
         // Calculate analytics
         if let analytics = AnalyticsCalculator.analyzeTranscript(
             chunks: chunks,
@@ -245,7 +261,7 @@ class MeetingViewModel: ObservableObject {
             print("   Clarity: \(analytics.scores.clarity)")
             print("   Conciseness: \(analytics.scores.conciseness)")
             print("   Confidence: \(analytics.scores.confidence)")
-            
+
             // Switch to analytics tab to show results
             selectedTab = .analytics
         } else {
