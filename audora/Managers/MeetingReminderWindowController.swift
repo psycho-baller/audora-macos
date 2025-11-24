@@ -12,7 +12,7 @@ class MeetingReminderWindowController: NSObject {
 
     private func setupWindow() {
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 320, height: 80),
+            contentRect: NSRect(x: 0, y: 0, width: 344, height: 100),
             styleMask: [.nonactivatingPanel, .fullSizeContentView], // Minimal style
             backing: .buffered,
             defer: false

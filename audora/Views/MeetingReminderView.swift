@@ -75,8 +75,7 @@ struct MeetingReminderView: View {
                         Image(systemName: "ellipsis")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.secondary)
-                            .frame(width: 24, height: 24)
-                            .background(Color.primary.opacity(0.05))
+                            .frame(width: 30, height: 30)
                             .clipShape(Circle())
                     }
                     .menuStyle(.borderlessButton)
@@ -107,8 +106,34 @@ struct MeetingReminderView: View {
             RoundedRectangle(cornerRadius: 16)
                 .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
         )
-        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 4)
+        .shadow(color: Color.black.opacity(0.1), radius: 14, x: 0, y: 4)
         .frame(width: 320)
+        .overlay(
+            Button(action: onDismiss) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundColor(.secondary)
+                    .frame(width: 18, height: 18)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Circle())
+                    .shadow(
+                        color: Color.black.opacity(0.1),
+                        radius: 1,
+                        x: 0,
+                        y: 1
+                    )
+                    .overlay(
+                        Circle()
+                            .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
+                    )
+            }
+            .buttonStyle(.plain)
+            .offset(x: -5, y: -3.5)
+            .opacity(isHovering ? 1 : 0)
+            .animation(.easeInOut(duration: 0.2), value: isHovering),
+            alignment: .topLeading
+        )
+        .padding(12) // Add padding to prevent clipping by window
         .onAppear {
             isPulsing = true
         }
