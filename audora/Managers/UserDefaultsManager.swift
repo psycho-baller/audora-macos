@@ -18,8 +18,6 @@ class UserDefaultsManager {
         static let hasCompletedOnboarding = "hasCompletedOnboarding"
         static let hasAcceptedTerms = "hasAcceptedTerms"
         static let selectedTemplateId = "selectedTemplateId"
-        static let autoRecordingEnabled = "autoRecordingEnabled"
-        static let micFollowingEnabled = "micFollowingEnabled"
     }
     
     // MARK: - User Blurb
@@ -30,7 +28,7 @@ class UserDefaultsManager {
     
     // MARK: - System Prompt
     var systemPrompt: String {
-        get { 
+        get {
             let stored = userDefaults.string(forKey: Keys.systemPrompt)
             return stored?.isEmpty == false ? stored! : Settings.defaultSystemPrompt()
         }
@@ -51,28 +49,16 @@ class UserDefaultsManager {
     
     // MARK: - Selected Template ID
     var selectedTemplateId: UUID? {
-        get { 
+        get {
             guard let uuidString = userDefaults.string(forKey: Keys.selectedTemplateId) else { return nil }
             return UUID(uuidString: uuidString)
         }
-        set { 
+        set {
             if let uuid = newValue {
                 userDefaults.set(uuid.uuidString, forKey: Keys.selectedTemplateId)
             } else {
                 userDefaults.removeObject(forKey: Keys.selectedTemplateId)
             }
         }
-    }
-    
-    // MARK: - Auto-Recording
-    var autoRecordingEnabled: Bool {
-        get { userDefaults.bool(forKey: Keys.autoRecordingEnabled) }
-        set { userDefaults.set(newValue, forKey: Keys.autoRecordingEnabled) }
-    }
-    
-    // MARK: - Mic Following
-    var micFollowingEnabled: Bool {
-        get { userDefaults.bool(forKey: Keys.micFollowingEnabled) }
-        set { userDefaults.set(newValue, forKey: Keys.micFollowingEnabled) }
     }
 }

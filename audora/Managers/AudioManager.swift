@@ -49,29 +49,6 @@ class AudioManager: NSObject, ObservableObject {
     // Session refresh timers to prevent 30-minute expiry
     private var sessionRefreshTimers: [AudioSource: Timer] = [:]
 
-    // MARK: - Auto-Recording Properties
-
-    @Published var isAutoRecordingEnabled = false
-    private var audioMonitor: SystemAudioMonitor?
-    private var autoStartDelay: Timer?
-    private var autoStopDelay: Timer?
-    private let startDelayTime: TimeInterval = 0.5  // Delay before auto-start
-    private let stopDelayTime: TimeInterval = 3.0   // Delay before auto-stop
-
-    // MARK: - Mic Following Properties
-
-    @Published var isMicFollowingEnabled = false
-    private var micMonitor: MicUsageMonitor?
-    private var micFollowStartDelay: Timer?
-    private var micFollowStopDelay: Timer?  // Used to delay stopping when other apps stop using the mic
-    private var activityTracker: ActivityTracker?
-    private var silenceProbeTimer: Timer?  // Periodically checks for silence
-    private var isRecordingDueToMicFollowing = false  // Track if we started due to mic following
-    private var currentMicFollowingSession: TranscriptionSession?  // Track current mic following session
-    private let micFollowStartDelayTime: TimeInterval = 0.5  // Delay before starting when other app uses mic
-    private let silenceWindow: TimeInterval = 3.0   // Stop after 3 seconds of silence
-    private let probePause: TimeInterval = 0.1      // Wait time during probe
-    private let probeInterval: TimeInterval = 1.0   // Check for silence every 1 second
 
     private override init() {
         super.init()
@@ -140,43 +117,7 @@ class AudioManager: NSObject, ObservableObject {
         }
     }
 
-    /// Start recording microphone only (for mic following mode)
-    private func startMicrophoneOnlyRecording() {
-        print("Starting microphone-only recording...")
 
-        // Bump session ID so any old async callbacks can be ignored
-        sessionID = UUID()
-
-        // Clear any previous errors
-        DispatchQueue.main.async {
-            self.errorMessage = nil
-        }
-
-        // Stop any in-progress recording
-        stopRecordingInternal()
-
-        // Validate API key and account status before connecting
-        Task {
-            let validationResult = await APIKeyValidator.shared.validateCurrentAPIKey()
-            switch validationResult {
-            case .failure(let error):
-                let errorMsg = error.localizedDescription
-                print("❌ API key validation failed: \(errorMsg)")
-                DispatchQueue.main.async {
-                    self.errorMessage = errorMsg
-                }
-            case .success:
-                // Proceed with microphone tap only
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    // Start microphone capture ONLY (no system audio)
-                    self.startMicrophoneTap()
-                    // Mark as recording
-                    self.isRecording = true
-                    AudioLevelManager.shared.updateRecordingState(true)
-                }
-            }
-        }
-    }
 
     private func stopRecordingInternal() {
         print("Internal cleanup...")
@@ -271,8 +212,7 @@ class AudioManager: NSObject, ObservableObject {
                     }
                 }
 
-                // Track activity for mic following mode
-                self.activityTracker?.onAudioBuffer(buffer)
+
 
                 self.processAudioBuffer(buffer, converter: converter, targetFormat: targetFormat, source: .mic)
             }
@@ -355,9 +295,6 @@ class AudioManager: NSObject, ObservableObject {
                 connectToOpenAIRealtime(source: .system)
                 self.isRecording = true
                 AudioLevelManager.shared.updateRecordingState(true)
-
-                // Start audio monitoring now that we have system audio access
-                self.startAudioMonitoringIfNeeded()
             }
             print("✅ System audio tap started successfully (isRestart: \(isRestart))")
 
@@ -531,12 +468,7 @@ class AudioManager: NSObject, ObservableObject {
         sessionRefreshTimers.values.forEach { $0.invalidate() }
         sessionRefreshTimers.removeAll()
 
-        // Clean up mic following state
-        if isRecordingDueToMicFollowing {
-            isRecordingDueToMicFollowing = false
-            stopSilenceProbeTimer()
-            activityTracker = nil
-        }
+
 
         print("Recording stopped")
     }
@@ -897,9 +829,6 @@ class AudioManager: NSObject, ObservableObject {
                         isFinal: false
                     )
                     self.transcriptChunks.append(chunk)
-
-                    // Track transcript activity for mic following
-                    self.activityTracker?.onTranscriptActivity()
                 }
             }
         case "conversation.item.input_audio_transcription.completed":
@@ -918,9 +847,6 @@ class AudioManager: NSObject, ObservableObject {
                         isFinal: true
                     )
                     self.transcriptChunks.append(chunk)
-
-                    // Track transcript activity for mic following
-                    self.activityTracker?.onTranscriptActivity()
 
                     // Reset interim for this source
                     self.currentInterim[source] = ""
@@ -1000,411 +926,10 @@ class AudioManager: NSObject, ObservableObject {
         }
     }
 
+    // MARK: - Helper Methods
+
     private func handleAudioEngineConfigurationChange() {
-        print("🔔 Audio engine configuration changed - restarting mic")
+        print("� Audio engine configuration changed - restarting mic")
         restartMicrophone()
-    }
-
-    // MARK: - Auto-Recording Methods
-
-    /// Enable automatic recording when other apps use audio
-    /// Note: Monitoring will start only after the first recording session
-    /// to avoid requesting system audio permissions prematurely
-    func enableAutoRecording() {
-        guard !isAutoRecordingEnabled else {
-            print("ℹ️ Auto-recording already enabled")
-            return
-        }
-
-        print("🎯 Enabling auto-recording...")
-        isAutoRecordingEnabled = true
-
-        // Create monitor but don't start it yet
-        audioMonitor = SystemAudioMonitor()
-        audioMonitor?.onAudioStateChanged = { [weak self] state in
-            Task { @MainActor in
-                self?.handleSystemAudioStateChange(state)
-            }
-        }
-
-        print("✅ Auto-recording enabled - monitoring will start after first recording")
-    }
-
-    /// Start system audio monitoring (called after first recording begins)
-    private func startAudioMonitoringIfNeeded() {
-        guard isAutoRecordingEnabled, let monitor = audioMonitor else { return }
-
-        // Check if already monitoring
-        guard !monitor.isMonitoring else { return }
-
-        print("🎧 Starting audio state monitoring...")
-        do {
-            try monitor.startMonitoring()
-            print("✅ Audio monitoring active - will detect when other apps use audio")
-        } catch {
-            print("❌ Failed to start monitoring: \(error)")
-            errorMessage = "Failed to start audio monitoring: \(error.localizedDescription)"
-        }
-    }
-
-    /// Disable automatic recording
-    func disableAutoRecording() {
-        guard isAutoRecordingEnabled else {
-            print("ℹ️ Auto-recording already disabled")
-            return
-        }
-
-        print("🛑 Disabling auto-recording...")
-
-        // Stop monitoring
-        audioMonitor?.stopMonitoring()
-        audioMonitor = nil
-
-        // Cancel any pending timers
-        autoStartDelay?.invalidate()
-        autoStartDelay = nil
-        autoStopDelay?.invalidate()
-        autoStopDelay = nil
-
-        isAutoRecordingEnabled = false
-        print("✅ Auto-recording disabled")
-    }
-
-    /// Handle system audio state changes
-    private func handleSystemAudioStateChange(_ state: SystemAudioMonitor.AudioState) {
-        switch state {
-        case .active:
-            // Another app started using audio
-            handleOtherAppStartedAudio()
-        case .inactive:
-            // Other apps stopped using audio
-            handleOtherAppStoppedAudio()
-        }
-    }
-
-    /// When another app starts using audio → Start recording after brief delay
-    private func handleOtherAppStartedAudio() {
-        print("🎵 Detected: Another app is using audio")
-
-        // Cancel any pending stop
-        autoStopDelay?.invalidate()
-        autoStopDelay = nil
-
-        // If already recording, do nothing
-        guard !isRecording else {
-            print("ℹ️ Already recording")
-            return
-        }
-
-        // Start recording after brief delay to avoid false positives
-        print("⏱️ Will start recording in \(startDelayTime)s...")
-        autoStartDelay?.invalidate()
-        autoStartDelay = Timer.scheduledTimer(withTimeInterval: startDelayTime, repeats: false) { [weak self] _ in
-            guard let self = self, self.isAutoRecordingEnabled else { return }
-
-            // Double-check audio is still active
-            if self.audioMonitor?.audioState == .active && !self.isRecording {
-                print("🎙️ Auto-starting recording...")
-                self.startRecording()
-            }
-        }
-    }
-
-    /// When other apps stop using audio → Stop recording after delay
-    private func handleOtherAppStoppedAudio() {
-        print("🔇 Detected: Other apps stopped using audio")
-
-        // Cancel any pending start
-        autoStartDelay?.invalidate()
-        autoStartDelay = nil
-
-        // If not recording, do nothing
-        guard isRecording else {
-            print("ℹ️ Not recording")
-            return
-        }
-
-        // Stop recording after delay
-        print("⏱️ Will stop recording in \(stopDelayTime)s...")
-        autoStopDelay?.invalidate()
-        autoStopDelay = Timer.scheduledTimer(withTimeInterval: stopDelayTime, repeats: false) { [weak self] _ in
-            guard let self = self, self.isAutoRecordingEnabled else { return }
-
-            // Double-check audio is still inactive
-            if self.audioMonitor?.audioState == .inactive && self.isRecording {
-                print("⏹️ Auto-stopping recording...")
-                self.stopRecording()
-            }
-        }
-    }
-
-    // MARK: - Mic Following Methods
-
-    /// Enable mic following mode - record only when other apps are using the microphone
-    func enableMicFollowing() {
-        guard !isMicFollowingEnabled else {
-            print("ℹ️ Mic following already enabled")
-            return
-        }
-
-        print("🎯 Enabling mic following mode...")
-        isMicFollowingEnabled = true
-
-        // Create and start mic monitor
-        micMonitor = MicUsageMonitor()
-        micMonitor?.onMicStateChanged = { [weak self] state in
-            Task { @MainActor in
-                self?.handleMicUsageStateChange(state)
-            }
-        }
-
-        do {
-            try micMonitor?.startMonitoring()
-            print("✅ Mic following enabled - will record when other apps use microphone")
-        } catch {
-            print("❌ Failed to start mic monitoring: \(error)")
-            errorMessage = "Failed to enable mic following: \(error.localizedDescription)"
-            isMicFollowingEnabled = false
-            micMonitor = nil
-        }
-    }
-
-    /// Disable mic following mode
-    func disableMicFollowing() {
-        guard isMicFollowingEnabled else {
-            print("ℹ️ Mic following already disabled")
-            return
-        }
-
-        print("🛑 Disabling mic following mode...")
-
-        // Stop monitoring
-        micMonitor?.stopMonitoring()
-        micMonitor = nil
-
-        // Cancel any pending timers
-        micFollowStartDelay?.invalidate()
-        micFollowStartDelay = nil
-        stopSilenceProbeTimer()
-
-        // Cleanup activity tracker
-        activityTracker = nil
-
-        // Stop recording if active and due to mic following
-        if isRecording && isRecordingDueToMicFollowing {
-            print("⏹️ Stopping recording due to mic following disable")
-            isRecordingDueToMicFollowing = false
-            stopRecording()
-        }
-
-        isMicFollowingEnabled = false
-        print("✅ Mic following disabled")
-    }
-
-    /// Handle microphone usage state changes
-    private func handleMicUsageStateChange(_ state: MicUsageMonitor.MicState) {
-        switch state {
-        case .active:
-            // Another app started using the microphone
-            handleOtherAppStartedMic()
-        case .inactive:
-            // Other apps stopped using the microphone
-            handleOtherAppStoppedMic()
-        }
-    }
-
-    /// When another app starts using the mic → Start recording after brief delay
-    private func handleOtherAppStartedMic() {
-        print("🎤 Detected: Another app is using the microphone")
-
-        // Cancel any pending stop
-        micFollowStopDelay?.invalidate()
-        micFollowStopDelay = nil
-
-        // If already recording, do nothing
-        guard !isRecording else {
-            print("ℹ️ Already recording")
-            return
-        }
-
-        // Start recording after brief delay to avoid false positives
-        print("⏱️ Will start recording in \(micFollowStartDelayTime)s...")
-        micFollowStartDelay?.invalidate()
-        micFollowStartDelay = Timer.scheduledTimer(withTimeInterval: micFollowStartDelayTime, repeats: false) { [weak self] _ in
-            guard let self = self, self.isMicFollowingEnabled else { return }
-
-            // Double-check mic is still active
-            if self.micMonitor?.micState == .active && !self.isRecording {
-                print("🎙️ Auto-starting recording (mic following)...")
-                self.isRecordingDueToMicFollowing = true
-
-                // Create activity tracker
-                self.activityTracker = ActivityTracker()
-
-                // Create new transcription session for mic following
-                self.createMicFollowingSession()
-
-                self.startMicrophoneOnlyRecording()
-
-                // Start silence detection probe
-                self.startSilenceProbeTimer()
-            }
-        }
-    }
-
-    /// Start silence detection probe timer
-    private func startSilenceProbeTimer() {
-        silenceProbeTimer?.invalidate()
-
-        print("🔄 Starting silence detection probe...")
-        silenceProbeTimer = Timer.scheduledTimer(withTimeInterval: probeInterval, repeats: true) { [weak self] _ in
-            self?.probeForSilenceAndCheck()
-        }
-    }
-
-    /// Stop the silence probe timer
-    private func stopSilenceProbeTimer() {
-        silenceProbeTimer?.invalidate()
-        silenceProbeTimer = nil
-        print("🛑 Stopped silence detection probe")
-    }
-
-    /// Probe: Check for silence, then verify if other apps still using mic
-    private func probeForSilenceAndCheck() {
-        guard let monitor = micMonitor, let tracker = activityTracker else {
-            print("⚠️ Probe skipped: monitor or tracker nil")
-            return
-        }
-        guard isRecording && isRecordingDueToMicFollowing else {
-            print("⚠️ Probe skipped: not recording or not due to mic following")
-            return
-        }
-
-        // 1. Check if silent for configured window
-        let idleFor = tracker.secondsSinceLastActivity()
-        print("🔍 Probe check: idle for \(String(format: "%.1f", idleFor))s (threshold: \(silenceWindow)s)")
-
-        if idleFor < silenceWindow {
-            // Still active, continue recording
-            return
-        }
-
-        print("🔇 Silence detected for \(String(format: "%.1f", idleFor))s - probing...")
-
-        // 2. Completely stop our audio engine to clear mic usage
-        let wasRunning = audioEngine.isRunning
-        if wasRunning {
-            audioEngine.stop()
-            // Remove the tap to fully release the mic
-            audioEngine.inputNode.removeTap(onBus: 0)
-            print("⏸️ Stopped audio engine for probe")
-        }
-
-        // 3. After brief pause, check if anyone else still using mic
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-            guard let self = self else { return }
-
-            let someoneElseUsing = monitor.currentIsRunningSomewhere()
-            print("🔍 Probe result: someoneElseUsing = \(someoneElseUsing)")
-
-            if someoneElseUsing {
-                // Others still active -> restart recording
-                print("✅ Other apps still using mic, restarting recording")
-                if wasRunning {
-                    // Reinstall tap and restart
-                    self.startMicrophoneTap()
-                    // Reset activity tracker since we're continuing
-                    tracker.reset()
-                }
-            } else {
-                // No one else -> stop recording completely
-                print("⏹️ No other apps using mic - stopping recording")
-                self.stopMicFollowingRecording()
-            }
-        }
-    }
-
-    /// Stop recording and cleanup mic following state
-    private func stopMicFollowingRecording() {
-        // Save the session before stopping
-        saveMicFollowingSession()
-
-        stopSilenceProbeTimer()
-        activityTracker = nil
-        isRecordingDueToMicFollowing = false
-        currentMicFollowingSession = nil
-        stopRecording()
-    }
-
-    /// Create a new transcription session for mic following
-    private func createMicFollowingSession() {
-        let context = BrowserURLHelper.getCurrentContext()
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMM d, h:mm a"
-        let formattedDate = dateFormatter.string(from: Date())
-        
-        let title: String
-        if let contextName = context {
-            title = "\(contextName) - \(formattedDate)"
-        } else {
-            title = "Recording - \(formattedDate)"
-        }
-        
-        let session = TranscriptionSession(
-            date: Date(),
-            title: title,
-            source: .micFollowing
-        )
-        currentMicFollowingSession = session
-        print("📝 Created mic following session: \(session.id) - \(title)")
-    }
-
-    /// Save mic following session with captured transcripts
-    private func saveMicFollowingSession() {
-        guard var session = currentMicFollowingSession else {
-            print("⚠️ No mic following session to save")
-            return
-        }
-
-        // Add all final transcript chunks to the session
-        session.transcriptChunks = transcriptChunks.filter { $0.isFinal }
-
-        // Only save if there's actual content
-        guard !session.transcriptChunks.isEmpty else {
-            print("ℹ️ Skipping save - no transcript content")
-            return
-        }
-
-        print("💾 Saving mic following session with \(session.transcriptChunks.count) chunks")
-
-        // Calculate analytics for the session
-        if let firstChunk = session.transcriptChunks.first,
-           let lastChunk = session.transcriptChunks.last {
-            let durationSeconds = lastChunk.timestamp.timeIntervalSince(firstChunk.timestamp)
-            let durationMinutes = max(durationSeconds / 60.0, 0.1)
-
-            print("📊 Calculating analytics for mic following session")
-            if let analytics = AnalyticsCalculator.analyzeTranscript(
-                chunks: session.transcriptChunks,
-                durationMinutes: durationMinutes
-            ) {
-                session.analytics = analytics
-                print("✅ Analytics calculated - Clarity: \(analytics.scores.clarity), Conciseness: \(analytics.scores.conciseness), Confidence: \(analytics.scores.confidence)")
-            }
-        }
-
-        // Post notification to save the session
-        NotificationCenter.default.post(
-            name: NSNotification.Name("SaveTranscriptionSession"),
-            object: nil,
-            userInfo: ["session": session]
-        )
-    }
-
-    /// When other apps stop using the mic → No longer used with silence detection
-    private func handleOtherAppStoppedMic() {
-        // This method is called when mic monitor detects state change to inactive
-        // With silence detection, we don't rely on this - the probe handles stopping
-        print("ℹ️ Mic state changed to inactive (ignored in silence detection mode)")
     }
 }

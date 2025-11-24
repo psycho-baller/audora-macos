@@ -8,16 +8,16 @@ struct MeetingListView: View {
     @State private var navigationPath = NavigationPath()
     @Binding var triggerNewRecording: Bool
     @Binding var triggerOpenSettings: Bool
-    
+
     // Default initializer for use without bindings
-    init(settingsViewModel: SettingsViewModel, 
+    init(settingsViewModel: SettingsViewModel,
          triggerNewRecording: Binding<Bool> = .constant(false),
          triggerOpenSettings: Binding<Bool> = .constant(false)) {
         self.settingsViewModel = settingsViewModel
         self._triggerNewRecording = triggerNewRecording
         self._triggerOpenSettings = triggerOpenSettings
     }
-    
+
     var body: some View {
         NavigationSplitView {
             // Sidebar with meetings list
@@ -44,7 +44,7 @@ struct MeetingListView: View {
             navigationPath.append("settings")
         }
     }
-    
+
     private var sidebarContent: some View {
         VStack(spacing: 0) {
             HStack(spacing: 6) {
@@ -54,9 +54,9 @@ struct MeetingListView: View {
                     .textFieldStyle(.plain)
             }
             .padding(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
-            
+
             Divider()
-            
+
             Spacer().frame(height: 12) // Add space before list content
 
             List(selection: $selectedMeeting) {
@@ -98,7 +98,7 @@ struct MeetingListView: View {
         }
         .navigationTitle("Meetings")
     }
-    
+
     private var detailContent: some View {
         NavigationStack(path: $navigationPath) {
             Group {
@@ -120,18 +120,8 @@ struct MeetingListView: View {
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
                     Spacer()
-                    
-                    // Auto-recording status indicator
-                    if AudioManager.shared.isAutoRecordingEnabled {
-                        HStack(spacing: 4) {
-                            Image(systemName: "waveform.circle.fill")
-                                .foregroundColor(.green)
-                            Text("Auto")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        .help("Auto-recording enabled - will start/stop with other apps' audio")
-                    }
+
+
 
                     Button {
                         navigationPath.append("settings")
@@ -159,18 +149,18 @@ struct MeetingListView: View {
             }
         }
     }
-    
+
     private var groupedMeetings: [DayGroup] {
         let calendar = Calendar.current
         let now = Date()
-        
+
         let grouped = Dictionary(grouping: viewModel.filteredMeetings) { meeting in
             calendar.startOfDay(for: meeting.date)
         }
-        
+
         return grouped.map { (date, meetings) in
             let dayString: String
-            
+
             if calendar.isDateInToday(date) {
                 dayString = "Today"
             } else if calendar.isDateInYesterday(date) {
@@ -180,7 +170,7 @@ struct MeetingListView: View {
             } else {
                 dayString = date.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())
             }
-            
+
             return DayGroup(day: dayString, date: date, meetings: meetings.sorted { $0.date > $1.date })
         }.sorted { $0.date > $1.date }
     }
@@ -195,7 +185,7 @@ struct DayGroup {
 struct MeetingRowView: View {
     let meeting: Meeting
     @StateObject private var recordingSessionManager = RecordingSessionManager.shared
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             // Title or default
@@ -228,7 +218,7 @@ struct CollapsedTranscriptChunkView: View {
     let chunk: CollapsedTranscriptChunk
     let analytics: SpeechAnalytics?
     let activeSubtab: AnalyticsSubtab?
-    
+
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             // Source indicator
@@ -236,14 +226,14 @@ struct CollapsedTranscriptChunkView: View {
                 Image(systemName: chunk.source.icon)
                     .font(.caption)
                     .foregroundColor(chunk.source == .mic ? .blue : .orange)
-                
+
                 Text(chunk.source.displayName)
                     .font(.caption)
                     .fontWeight(.medium)
                     .foregroundColor(chunk.source == .mic ? .blue : .orange)
             }
             .frame(width: 50, alignment: .leading)
-            
+
             // Highlighted transcript text
             if let analytics = analytics, activeSubtab == .wordChoice {
                 HighlightedText(text: chunk.combinedText, analytics: analytics)
@@ -265,20 +255,20 @@ struct CollapsedTranscriptChunkView: View {
 struct HighlightedText: View {
     let text: String
     let analytics: SpeechAnalytics
-    
+
     var body: some View {
         buildHighlightedText()
     }
-    
+
     private func buildHighlightedText() -> some View {
         // Split text into words
         let words = text.split(separator: " ").map { String($0) }
-        
+
         // Create sets for quick lookup (use the actual words from analytics)
         let fillerWordsSet = Set(analytics.fillerWords.instances.map { $0.word.lowercased() })
         let repeatedWordsSet = Set(analytics.repetitions.repeatedWords.map { $0.word.lowercased() })
         let weakStartersSet = Set(analytics.sentenceStarters.weak.map { $0.word.lowercased() })
-        
+
         return WrappingHStack(alignment: .leading, spacing: 0) {
             ForEach(Array(words.enumerated()), id: \.offset) { index, word in
                 let cleanWord = word.lowercased().trimmingCharacters(in: .punctuationCharacters)
@@ -290,12 +280,12 @@ struct HighlightedText: View {
                     repeatedWordsSet: repeatedWordsSet,
                     weakStartersSet: weakStartersSet
                 )
-                
+
                 HStack(spacing: 0) {
                     if index > 0 {
                         Text(" ")
                     }
-                    
+
                     if let type = highlightType {
                         Text(word)
                             .background(type.color.opacity(0.3))
@@ -306,7 +296,7 @@ struct HighlightedText: View {
             }
         }
     }
-    
+
     private func determineHighlightType(
         word: String,
         index: Int,
@@ -329,15 +319,15 @@ struct HighlightedText: View {
                 return .weakStarter
             }
         }
-        
+
         return nil
     }
-    
+
     enum HighlightType {
         case fillerWord
         case repeatedWord
         case weakStarter
-        
+
         var color: Color {
             switch self {
             case .fillerWord:
@@ -356,15 +346,15 @@ struct HighlightedText: View {
 struct WrappingHStack: Layout {
     var alignment: Alignment = .leading
     var spacing: CGFloat = 8
-    
+
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let result = arrangeViews(proposal: proposal, subviews: subviews)
         return result.size
     }
-    
+
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         let arrangement = arrangeViews(proposal: proposal, subviews: subviews)
-        
+
         for (index, position) in arrangement.positions.enumerated() {
             subviews[index].place(
                 at: CGPoint(x: bounds.minX + position.x, y: bounds.minY + position.y),
@@ -372,7 +362,7 @@ struct WrappingHStack: Layout {
             )
         }
     }
-    
+
     private func arrangeViews(proposal: ProposedViewSize, subviews: Subviews) -> (size: CGSize, positions: [CGPoint], sizes: [CGSize]) {
         var positions: [CGPoint] = []
         var sizes: [CGSize] = []
@@ -380,27 +370,27 @@ struct WrappingHStack: Layout {
         var currentY: CGFloat = 0
         var lineHeight: CGFloat = 0
         var totalWidth: CGFloat = 0
-        
+
         let maxWidth = proposal.width ?? .infinity
-        
+
         for subview in subviews {
             let size = subview.sizeThatFits(.unspecified)
-            
+
             // Check if we need to wrap to next line
             if currentX + size.width > maxWidth && currentX > 0 {
                 currentX = 0
                 currentY += lineHeight + spacing
                 lineHeight = 0
             }
-            
+
             positions.append(CGPoint(x: currentX, y: currentY))
             sizes.append(size)
-            
+
             currentX += size.width
             lineHeight = max(lineHeight, size.height)
             totalWidth = max(totalWidth, currentX)
         }
-        
+
         let totalHeight = currentY + lineHeight
         return (CGSize(width: totalWidth, height: totalHeight), positions, sizes)
     }
@@ -411,14 +401,14 @@ struct WrappingHStack: Layout {
 struct LegendItem: View {
     let color: Color
     let label: String
-    
+
     var body: some View {
         HStack(spacing: 4) {
             Rectangle()
                 .fill(color.opacity(0.3))
                 .frame(width: 12, height: 12)
                 .cornerRadius(2)
-            
+
             Text(label)
                 .foregroundColor(.secondary)
         }
@@ -430,18 +420,18 @@ struct MeetingDetailContentView: View {
     @StateObject private var recordingSessionManager = RecordingSessionManager.shared
     @State private var showDeleteAlert = false
     let onDelete: () -> Void
-    
+
     init(meeting: Meeting, onDelete: @escaping () -> Void) {
         self._viewModel = StateObject(wrappedValue: MeetingViewModel(meeting: meeting))
         self.onDelete = onDelete
     }
-    
+
     // Computed property to determine if recording button should be disabled
     private var cannotStartRecording: Bool {
         // Disable if another meeting is recording (not this one)
         return recordingSessionManager.isRecording && !recordingSessionManager.isRecordingMeeting(viewModel.meeting.id)
     }
-    
+
     // Helper to get audio file URL - placeholder for now until backend is ready
     private var audioFileURL: URL? {
         // For testing: Load audio file from app bundle
@@ -452,13 +442,13 @@ struct MeetingDetailContentView: View {
         // For now, return nil to show placeholder
         return nil
     }
-    
+
     var body: some View {
         HSplitView {
             // Middle Column: Audio Player + Transcript
             middleColumn
                 .frame(minWidth: 400, idealWidth: 500)
-            
+
             // Right Column: Analytics Panel
             rightColumn
                 .frame(minWidth: 350, idealWidth: 400)
@@ -486,23 +476,23 @@ struct MeetingDetailContentView: View {
             viewModel.deleteIfEmpty()
         }
     }
-    
+
     // MARK: - Middle Column
-    
+
     private var middleColumn: some View {
         VStack(alignment: .leading, spacing: 16) {
             // Header with title and controls
             headerSection
-            
+
             // Audio Player (fixed at top)
             AudioPlayerView(audioURL: audioFileURL)
-            
+
             // Transcript Section
             transcriptSection
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    
+
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Title and Menu
@@ -511,9 +501,9 @@ struct MeetingDetailContentView: View {
                     .font(.title2)
                     .fontWeight(.semibold)
                     .textFieldStyle(.plain)
-                
+
                 Spacer()
-                
+
                 // Ellipsis menu
                 Menu {
                     Button("Delete Meeting", role: .destructive) {
@@ -531,7 +521,7 @@ struct MeetingDetailContentView: View {
                 .menuStyle(BorderlessButtonMenuStyle())
                 .frame(width: 20, height: 20)
             }
-            
+
             // Controls: Generate and Recording Buttons
             HStack(spacing: 8) {
                 // Generate Button (Dropdown)
@@ -568,7 +558,7 @@ struct MeetingDetailContentView: View {
                 .buttonStyle(.plain)
                 .disabled(viewModel.meeting.transcript.isEmpty || viewModel.isGeneratingNotes || viewModel.isRecording || viewModel.isStartingRecording)
                 .help("Generate enhanced notes using a template")
-                
+
                 // Recording Button
                 Button(action: {
                     viewModel.toggleRecording()
@@ -593,12 +583,12 @@ struct MeetingDetailContentView: View {
                 .buttonStyle(.plain)
                 .disabled(cannotStartRecording || viewModel.isValidatingKey || viewModel.isStartingRecording)
                 .help(cannotStartRecording ? "Another meeting is currently being recorded" : "Start or stop recording for this meeting")
-                
+
                 Spacer()
             }
         }
     }
-    
+
     private var transcriptSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             // Transcript Header
@@ -606,10 +596,10 @@ struct MeetingDetailContentView: View {
                 Text("Transcript")
                     .font(.headline)
                     .foregroundColor(.secondary)
-                
+
                 Spacer()
             }
-            
+
             // Transcript Content
             VStack(alignment: .leading, spacing: 8) {
                 // Color legend (only show when Word Choice subtab is active)
@@ -622,7 +612,7 @@ struct MeetingDetailContentView: View {
                     .font(.caption)
                     .padding(.horizontal, 4)
                 }
-                
+
                 ScrollView {
                     if viewModel.meeting.collapsedTranscriptChunks.isEmpty {
                         Text("Transcript will appear here...")
@@ -648,11 +638,11 @@ struct MeetingDetailContentView: View {
             .cornerRadius(8)
         }
     }
-    
+
     // MARK: - Right Column
-    
+
     @State private var activeAnalyticsSubtab: AnalyticsSubtab? = nil
-    
+
     private var rightColumn: some View {
         AnalyticsPanelView(
             analytics: viewModel.meeting.analytics,
@@ -674,7 +664,7 @@ struct MeetingDetailContentView: View {
 struct ShimmerOverlay: View {
     @State private var animate: Bool = false
     let color: Color
-    
+
     init(color: Color = .green) {
         self.color = color
     }
@@ -706,4 +696,4 @@ struct ShimmerOverlay: View {
 
 #Preview {
     MeetingListView(settingsViewModel: SettingsViewModel())
-} 
+}

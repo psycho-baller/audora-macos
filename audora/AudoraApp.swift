@@ -54,31 +54,7 @@ struct AudoraApp: App {
 
             Divider()
 
-            Toggle("Auto-Recording", isOn: Binding(
-                get: { settingsViewModel.settings.autoRecordingEnabled },
-                set: { newValue in
-                    settingsViewModel.settings.autoRecordingEnabled = newValue
-                    if newValue {
-                        AudioManager.shared.enableAutoRecording()
-                    } else {
-                        AudioManager.shared.disableAutoRecording()
-                    }
-                }
-            ))
-            .keyboardShortcut("a", modifiers: [.command, .shift])
 
-            Toggle("Mic Following Mode", isOn: Binding(
-                get: { settingsViewModel.settings.micFollowingEnabled },
-                set: { newValue in
-                    settingsViewModel.settings.micFollowingEnabled = newValue
-                    if newValue {
-                        AudioManager.shared.enableMicFollowing()
-                    } else {
-                        AudioManager.shared.disableMicFollowing()
-                    }
-                }
-            ))
-            .keyboardShortcut("m", modifiers: [.command, .shift])
 
             Divider()
 
@@ -88,7 +64,7 @@ struct AudoraApp: App {
             .keyboardShortcut(",", modifiers: .command)
 
             Divider()
-            
+
             CheckForUpdatesView(updater: updaterController.updater)
 
             Divider()

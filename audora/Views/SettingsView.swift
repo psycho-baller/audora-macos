@@ -38,58 +38,26 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
 
-                    Toggle("Enable auto-recording", isOn: $viewModel.settings.autoRecordingEnabled)
-                        .toggleStyle(.switch)
-                        .onChange(of: viewModel.settings.autoRecordingEnabled) { oldValue, newValue in
-                            if newValue {
-                                AudioManager.shared.enableAutoRecording()
-                            } else {
-                                AudioManager.shared.disableAutoRecording()
-                            }
-                        }
+//                    Toggle("Enable auto-recording", isOn: $viewModel.settings.autoRecordingEnabled)
+//                        .toggleStyle(.switch)
+//                        .onChange(of: viewModel.settings.autoRecordingEnabled) { oldValue, newValue in
+//                            if newValue {
+//                                AudioManager.shared.enableAutoRecording()
+//                            } else {
+//                                AudioManager.shared.disableAutoRecording()
+//                            }
+//                        }
 
-                    if viewModel.settings.autoRecordingEnabled {
-                        HStack(spacing: 4) {
-                            Image(systemName: "info.circle")
-                                .foregroundColor(.blue)
-                            Text("Recording starts when other apps use audio, stops 3s after they stop")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(.top, 4)
-                    }
-                }
-
-                // Mic Following Section
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Mic Following")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-
-                    Text("Record microphone only when other apps are using it. Does NOT record system audio - only captures your microphone input when detected.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-
-                    Toggle("Enable mic following", isOn: $viewModel.settings.micFollowingEnabled)
-                        .toggleStyle(.switch)
-                        .onChange(of: viewModel.settings.micFollowingEnabled) { oldValue, newValue in
-                            if newValue {
-                                AudioManager.shared.enableMicFollowing()
-                            } else {
-                                AudioManager.shared.disableMicFollowing()
-                            }
-                        }
-
-                    if viewModel.settings.micFollowingEnabled {
-                        HStack(spacing: 4) {
-                            Image(systemName: "info.circle")
-                                .foregroundColor(.blue)
-                            Text("Microphone-only. Stops after 3s of silence when no other apps using mic.")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(.top, 4)
-                    }
+//                    if viewModel.settings.autoRecordingEnabled {
+//                        HStack(spacing: 4) {
+//                            Image(systemName: "info.circle")
+//                                .foregroundColor(.blue)
+//                            Text("Recording starts when other apps use audio, stops 3s after they stop")
+//                                .font(.caption)
+//                                .foregroundColor(.secondary)
+//                        }
+//                        .padding(.top, 4)
+//                    }
                 }
 
                 // Note Templates Section: only the Manage Templates button

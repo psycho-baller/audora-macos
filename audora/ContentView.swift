@@ -24,15 +24,7 @@ struct ContentView: View {
                     triggerOpenSettings: $triggerOpenSettings
                 )
                 .onAppear {
-                    // Restore auto-recording state on launch
-                    if settingsViewModel.settings.autoRecordingEnabled {
-                        AudioManager.shared.enableAutoRecording()
-                    }
-
-                    // Restore mic following state on launch
-                    if settingsViewModel.settings.micFollowingEnabled {
-                        AudioManager.shared.enableMicFollowing()
-                    }
+                    // No longer restoring auto-recording or mic-following state
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .createNewRecording)) { _ in
                     triggerNewRecording.toggle()
