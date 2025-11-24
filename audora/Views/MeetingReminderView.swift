@@ -10,6 +10,7 @@ struct MeetingReminderView: View {
     @State private var isHovering = false
     @State private var isPulsing = false
     @State private var progress: CGFloat = 0.0
+    @State private var isHoveringCloseButton = false
     private let duration: TimeInterval = 10.0
     private let timer = Timer.publish(every: 0.05, on: .main, in: .common)
         .autoconnect()
@@ -108,26 +109,45 @@ struct MeetingReminderView: View {
         )
         .shadow(color: Color.black.opacity(0.1), radius: 14, x: 0, y: 4)
         .frame(width: 320)
+
+
         .overlay(
             Button(action: onDismiss) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundColor(.secondary)
-                    .frame(width: 18, height: 18)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Circle())
-                    .shadow(
-                        color: Color.black.opacity(0.1),
-                        radius: 1,
-                        x: 0,
-                        y: 1
-                    )
-                    .overlay(
-                        Circle()
-                            .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
-                    )
+                HStack(spacing: 0) {
+
+
+                    if isHoveringCloseButton {
+                        Text("ignore")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .padding(4)
+                            .fixedSize()
+                    } else {
+Image(systemName: "xmark")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundColor(.secondary)
+                        .frame(width: 18, height: 18)
+                    }
+                }
+                .background(.ultraThinMaterial)
+                .clipShape(Capsule())
+                .shadow(
+                    color: Color.black.opacity(0.1),
+                    radius: 1,
+                    x: 0,
+                    y: 1
+                )
+                .overlay(
+                    Capsule()
+                        .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
+                )
             }
             .buttonStyle(.plain)
+            .onHover { hovering in
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    isHoveringCloseButton = hovering
+                }
+            }
             .offset(x: -5, y: -3.5)
             .opacity(isHovering ? 1 : 0)
             .animation(.easeInOut(duration: 0.2), value: isHovering),
