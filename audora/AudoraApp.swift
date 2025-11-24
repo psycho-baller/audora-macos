@@ -32,6 +32,9 @@ struct AudoraApp: App {
         #else
         PostHogSDK.shared.register(["environment": "prod"] )
         #endif
+
+        // Start meeting app detection
+        MeetingAppDetector.shared.startMonitoring()
     }
 
     var body: some Scene {

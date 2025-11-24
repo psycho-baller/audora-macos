@@ -28,36 +28,49 @@ struct SettingsView: View {
                         .frame(maxWidth: .infinity)
                 }
 
-                // Auto-Recording Section
+                // Meeting Reminders Section
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Auto-Recording")
+                    Text("Meeting Reminders")
                         .font(.headline)
                         .foregroundColor(.primary)
 
-                    Text("Automatically start and stop recording when other apps use audio (e.g., Zoom calls).")
+                    Text("Get notified to record when these apps use the microphone.")
                         .font(.caption)
                         .foregroundColor(.secondary)
 
-//                    Toggle("Enable auto-recording", isOn: $viewModel.settings.autoRecordingEnabled)
-//                        .toggleStyle(.switch)
-//                        .onChange(of: viewModel.settings.autoRecordingEnabled) { oldValue, newValue in
-//                            if newValue {
-//                                AudioManager.shared.enableAutoRecording()
-//                            } else {
-//                                AudioManager.shared.disableAutoRecording()
-//                            }
-//                        }
+                    Toggle("Enable meeting reminders", isOn: $viewModel.settings.meetingReminderEnabled)
+                        .toggleStyle(.switch)
 
-//                    if viewModel.settings.autoRecordingEnabled {
-//                        HStack(spacing: 4) {
-//                            Image(systemName: "info.circle")
-//                                .foregroundColor(.blue)
-//                            Text("Recording starts when other apps use audio, stops 3s after they stop")
-//                                .font(.caption)
-//                                .foregroundColor(.secondary)
-//                        }
-//                        .padding(.top, 4)
-//                    }
+                    if viewModel.settings.meetingReminderEnabled {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Monitored Apps")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .padding(.top, 4)
+
+                            ForEach(Array(MeetingAppDetector.shared.knownMeetingApps.sorted()), id: \.self) { bundleID in
+                                let appName = bundleID.components(separatedBy: ".").last ?? bundleID
+                                let isIgnored = viewModel.settings.ignoredAppBundleIDs.contains(bundleID)
+
+                                Toggle(isOn: Binding(
+                                    get: { !isIgnored },
+                                    set: { isEnabled in
+                                        if isEnabled {
+                                            viewModel.settings.ignoredAppBundleIDs.remove(bundleID)
+                                        } else {
+                                            viewModel.settings.ignoredAppBundleIDs.insert(bundleID)
+                                        }
+                                    }
+                                )) {
+                                    Text(appName)
+                                        .font(.body)
+                                }
+                                .toggleStyle(.switch)
+                            }
+                        }
+                        .padding(.leading, 12)
+                        .padding(.top, 4)
+                    }
                 }
 
                 // Note Templates Section: only the Manage Templates button

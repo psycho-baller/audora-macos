@@ -121,7 +121,7 @@ private extension AudioProcess {
             id: app.processIdentifier,
             kind: .app,
             name: name,
-            audioActive: objectID.readProcessIsRunning(),
+            audioActive: (try? objectID.readBool(objectID.kAudioProcessPropertyIsRunning)) ?? false,
             bundleID: app.bundleIdentifier,
             bundleURL: app.bundleURL,
             objectID: objectID
@@ -155,7 +155,7 @@ private extension AudioProcess {
             id: pid,
             kind: bundleURL?.isApp == true ? .app : .process,
             name: name,
-            audioActive: objectID.readProcessIsRunning(),
+            audioActive: (try? objectID.readBool(objectID.kAudioProcessPropertyIsRunning)) ?? false,
             bundleID: bundleID.flatMap { $0.isEmpty ? nil : $0 },
             bundleURL: bundleURL,
             objectID: objectID
