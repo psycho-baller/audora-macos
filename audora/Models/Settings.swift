@@ -39,6 +39,16 @@ struct Settings: Codable {
         set { UserDefaultsManager.shared.ignoredAppBundleIDs = newValue }
     }
 
+    var calendarIntegrationEnabled: Bool {
+        get { UserDefaultsManager.shared.calendarIntegrationEnabled }
+        set { UserDefaultsManager.shared.calendarIntegrationEnabled = newValue }
+    }
+
+    var selectedCalendarIDs: Set<String> {
+        get { UserDefaultsManager.shared.selectedCalendarIDs }
+        set { UserDefaultsManager.shared.selectedCalendarIDs = newValue }
+    }
+
 
     // System prompt default loading
     static func defaultSystemPrompt() -> String {

@@ -7,6 +7,7 @@ struct OnboardingView: View {
     @State private var hasAcceptedTerms = false
     @State private var micPermissionGranted = false
     @State private var systemAudioPermissionGranted = false
+    @State private var calendarPermissionGranted = false
     @State private var showingPermissionAlert = false
     @State private var permissionAlertMessage = ""
 
@@ -38,6 +39,13 @@ struct OnboardingView: View {
                                     description: "Required to transcribe what others say in meetings",
                                     isGranted: systemAudioPermissionGranted,
                                     action: requestSystemAudioPermission
+                                )
+
+                                PermissionRow(
+                                    title: "Calendar Access",
+                                    description: "Optional: Show upcoming meetings to easily start recording",
+                                    isGranted: calendarPermissionGranted,
+                                    action: requestCalendarPermission
                                 )
                             }
                         }
@@ -181,6 +189,9 @@ struct OnboardingView: View {
 
         // Check system audio recording permission
         systemAudioPermissionGranted = (audioRecordingPermission.status == .authorized)
+
+        // Check calendar permission
+        calendarPermissionGranted = CalendarManager.shared.authorizationStatus == .authorized
     }
 
     private func requestMicrophonePermission() {
@@ -203,6 +214,17 @@ struct OnboardingView: View {
             if audioRecordingPermission.status == .denied {
                 permissionAlertMessage = "System audio recording access is required to capture what others say in meetings. Please enable 'Audora' in System Preferences > Security & Privacy > Privacy > Microphone."
                 showingPermissionAlert = true
+            }
+        }
+    }
+
+    private func requestCalendarPermission() {
+        CalendarManager.shared.requestAccess { granted, _ in
+            DispatchQueue.main.async {
+                calendarPermissionGranted = granted
+                if granted {
+                    settingsViewModel.settings.calendarIntegrationEnabled = true
+                }
             }
         }
     }

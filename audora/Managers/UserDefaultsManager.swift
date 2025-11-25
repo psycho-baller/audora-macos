@@ -20,6 +20,8 @@ class UserDefaultsManager {
         static let selectedTemplateId = "selectedTemplateId"
         static let meetingReminderEnabled = "meetingReminderEnabled"
         static let ignoredAppBundleIDs = "ignoredAppBundleIDs"
+        static let calendarIntegrationEnabled = "calendarIntegrationEnabled"
+        static let selectedCalendarIDs = "selectedCalendarIDs"
     }
 
     // MARK: - User Blurb
@@ -79,6 +81,23 @@ class UserDefaultsManager {
         }
         set {
             userDefaults.set(Array(newValue), forKey: Keys.ignoredAppBundleIDs)
+        }
+    }
+    // MARK: - Calendar Integration
+    var calendarIntegrationEnabled: Bool {
+        get { userDefaults.object(forKey: Keys.calendarIntegrationEnabled) as? Bool ?? false }
+        set { userDefaults.set(newValue, forKey: Keys.calendarIntegrationEnabled) }
+    }
+
+    var selectedCalendarIDs: Set<String> {
+        get {
+            if let array = userDefaults.array(forKey: Keys.selectedCalendarIDs) as? [String] {
+                return Set(array)
+            }
+            return []
+        }
+        set {
+            userDefaults.set(Array(newValue), forKey: Keys.selectedCalendarIDs)
         }
     }
 }

@@ -60,6 +60,34 @@ struct MeetingListView: View {
             Spacer().frame(height: 12) // Add space before list content
 
             List(selection: $selectedMeeting) {
+                // Upcoming Events Section
+                if !viewModel.upcomingEvents.isEmpty {
+                    Section(header: Text("Upcoming Meetings")) {
+                        ForEach(viewModel.upcomingEvents, id: \.eventIdentifier) { event in
+                            Button {
+                                let newMeeting = viewModel.createMeeting(from: event)
+                                selectedMeeting = newMeeting
+                            } label: {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(event.title)
+                                        .font(.headline)
+                                        .lineLimit(1)
+
+                                    HStack {
+                                        Text(event.startDate, style: .time)
+                                        Text("-")
+                                        Text(event.endDate, style: .time)
+                                    }
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                }
+                                .padding(.vertical, 4)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+
                 // Only render meeting sections when there are meetings or loading state
                 ForEach(groupedMeetings, id: \.day) { dayGroup in
                     Section {

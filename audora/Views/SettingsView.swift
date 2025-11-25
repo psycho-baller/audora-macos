@@ -73,6 +73,71 @@ struct SettingsView: View {
                     }
                 }
 
+                // Calendar Integration Section
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Calendar Integration")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+
+                    Text("Show upcoming meetings from your calendar.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    Toggle("Enable calendar integration", isOn: $viewModel.settings.calendarIntegrationEnabled)
+                        .toggleStyle(.switch)
+                        .onChange(of: viewModel.settings.calendarIntegrationEnabled) { _, newValue in
+                            if newValue {
+                                CalendarManager.shared.requestAccess { granted, _ in
+                                    if !granted {
+                                        DispatchQueue.main.async {
+                                            viewModel.settings.calendarIntegrationEnabled = false
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                    if viewModel.settings.calendarIntegrationEnabled {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Select Calendars")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .padding(.top, 4)
+
+                            if viewModel.calendars.isEmpty {
+                                Text("No calendars found or access denied.")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            } else {
+                                ForEach(viewModel.calendars, id: \.calendarIdentifier) { calendar in
+                                    Toggle(isOn: Binding(
+                                        get: { viewModel.settings.selectedCalendarIDs.contains(calendar.calendarIdentifier) },
+                                        set: { isSelected in
+                                            if isSelected {
+                                                viewModel.settings.selectedCalendarIDs.insert(calendar.calendarIdentifier)
+                                            } else {
+                                                viewModel.settings.selectedCalendarIDs.remove(calendar.calendarIdentifier)
+                                            }
+                                            // Refresh events when selection changes
+                                            CalendarManager.shared.fetchUpcomingEvents(calendarIDs: viewModel.settings.selectedCalendarIDs)
+                                        }
+                                    )) {
+                                        HStack {
+                                            Circle()
+                                                .fill(Color(calendar.cgColor))
+                                                .frame(width: 8, height: 8)
+                                            Text(calendar.title)
+                                        }
+                                    }
+                                    .toggleStyle(.switch)
+                                }
+                            }
+                        }
+                        .padding(.leading, 12)
+                        .padding(.top, 4)
+                    }
+                }
+
                 // Note Templates Section: only the Manage Templates button
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Note Templates")

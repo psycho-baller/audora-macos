@@ -3,6 +3,7 @@ import SwiftUI
 import Combine
 import PostHog
 import AppKit
+import EventKit
 
 @MainActor
 class MeetingListViewModel: ObservableObject {
@@ -10,6 +11,8 @@ class MeetingListViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var searchText: String = ""
+
+    @Published var upcomingEvents: [EKEvent] = []
 
     private var cancellables = Set<AnyCancellable>()
     private let recordingSessionManager = RecordingSessionManager.shared
@@ -35,6 +38,16 @@ class MeetingListViewModel: ObservableObject {
     init() {
         loadMeetings()
 
+        // Subscribe to calendar events
+        CalendarManager.shared.$upcomingEvents
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$upcomingEvents)
+
+        // Initial fetch if enabled
+        if UserDefaultsManager.shared.calendarIntegrationEnabled {
+            CalendarManager.shared.fetchUpcomingEvents(calendarIDs: UserDefaultsManager.shared.selectedCalendarIDs)
+        }
+
         // Listen for saved meeting notifications to refresh the list
         NotificationCenter.default.publisher(for: .meetingSaved)
             .sink { [weak self] _ in
@@ -59,6 +72,17 @@ class MeetingListViewModel: ObservableObject {
                 }
             }
             .store(in: &cancellables)
+    }
+
+    func createMeeting(from event: EKEvent) -> Meeting {
+        let newMeeting = Meeting(title: event.title)
+        meetings.insert(newMeeting, at: 0)
+        _ = LocalStorageManager.shared.saveMeeting(newMeeting)
+
+        NSApp.activate(ignoringOtherApps: true)
+        PostHogSDK.shared.capture("meeting_created_from_calendar")
+
+        return newMeeting
     }
 
     func loadMeetings() {
