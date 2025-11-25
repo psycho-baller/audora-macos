@@ -49,6 +49,31 @@ struct Settings: Codable {
         set { UserDefaultsManager.shared.selectedCalendarIDs = newValue }
     }
 
+    var showUpcomingInMenuBar: Bool {
+        get { UserDefaultsManager.shared.showUpcomingInMenuBar }
+        set { UserDefaultsManager.shared.showUpcomingInMenuBar = newValue }
+    }
+
+    var showEventsWithNoParticipants: Bool {
+        get { UserDefaultsManager.shared.showEventsWithNoParticipants }
+        set { UserDefaultsManager.shared.showEventsWithNoParticipants = newValue }
+    }
+
+    var showLiveMeetingIndicator: Bool {
+        get { UserDefaultsManager.shared.showLiveMeetingIndicator }
+        set { UserDefaultsManager.shared.showLiveMeetingIndicator = newValue }
+    }
+
+    var launchAtLogin: Bool {
+        get { UserDefaultsManager.shared.launchAtLogin }
+        set { UserDefaultsManager.shared.launchAtLogin = newValue }
+    }
+
+    var notifyScheduledMeetings: Bool {
+        get { UserDefaultsManager.shared.notifyScheduledMeetings }
+        set { UserDefaultsManager.shared.notifyScheduledMeetings = newValue }
+    }
+
 
     // System prompt default loading
     static func defaultSystemPrompt() -> String {

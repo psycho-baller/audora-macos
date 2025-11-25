@@ -38,6 +38,8 @@ class CalendarManager: ObservableObject {
         }
     }
 
+    @Published var nextEvent: EKEvent?
+
     func fetchUpcomingEvents(calendarIDs: Set<String>? = nil) {
         guard authorizationStatus == .authorized else { return }
 
@@ -55,8 +57,23 @@ class CalendarManager: ObservableObject {
         let predicate = eventStore.predicateForEvents(withStart: now, end: endDate, calendars: calendarsToSearch)
         let events = eventStore.events(matching: predicate).sorted { $0.startDate < $1.startDate }
 
+        // Filter events
+        let showNoParticipants = UserDefaultsManager.shared.showEventsWithNoParticipants
+        let filteredEvents = events.filter { event in
+            if showNoParticipants { return true }
+            // Check if event has participants (attendees) or a video link (location/notes/url)
+            let hasAttendees = event.attendees?.isEmpty == false
+            let hasVideoLink = (event.location?.contains("zoom") == true || event.location?.contains("meet") == true || event.location?.contains("teams") == true) ||
+                               (event.notes?.contains("zoom") == true || event.notes?.contains("meet") == true || event.notes?.contains("teams") == true) ||
+                               (event.url?.absoluteString.contains("zoom") == true || event.url?.absoluteString.contains("meet") == true || event.url?.absoluteString.contains("teams") == true)
+
+            return hasAttendees || hasVideoLink
+        }
+
         DispatchQueue.main.async {
-            self.upcomingEvents = events
+            self.upcomingEvents = filteredEvents
+            // Find next event (first event that hasn't ended yet)
+            self.nextEvent = filteredEvents.first(where: { $0.endDate > Date() })
         }
     }
 }

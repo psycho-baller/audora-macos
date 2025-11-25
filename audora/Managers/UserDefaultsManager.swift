@@ -22,6 +22,13 @@ class UserDefaultsManager {
         static let ignoredAppBundleIDs = "ignoredAppBundleIDs"
         static let calendarIntegrationEnabled = "calendarIntegrationEnabled"
         static let selectedCalendarIDs = "selectedCalendarIDs"
+
+        // New Settings Keys
+        static let showUpcomingInMenuBar = "showUpcomingInMenuBar"
+        static let showEventsWithNoParticipants = "showEventsWithNoParticipants"
+        static let showLiveMeetingIndicator = "showLiveMeetingIndicator"
+        static let launchAtLogin = "launchAtLogin"
+        static let notifyScheduledMeetings = "notifyScheduledMeetings"
     }
 
     // MARK: - User Blurb
@@ -99,5 +106,32 @@ class UserDefaultsManager {
         set {
             userDefaults.set(Array(newValue), forKey: Keys.selectedCalendarIDs)
         }
+    }
+
+    // MARK: - Advanced Settings
+
+    var showUpcomingInMenuBar: Bool {
+        get { userDefaults.object(forKey: Keys.showUpcomingInMenuBar) as? Bool ?? true }
+        set { userDefaults.set(newValue, forKey: Keys.showUpcomingInMenuBar) }
+    }
+
+    var showEventsWithNoParticipants: Bool {
+        get { userDefaults.object(forKey: Keys.showEventsWithNoParticipants) as? Bool ?? true }
+        set { userDefaults.set(newValue, forKey: Keys.showEventsWithNoParticipants) }
+    }
+
+    var showLiveMeetingIndicator: Bool {
+        get { userDefaults.object(forKey: Keys.showLiveMeetingIndicator) as? Bool ?? true }
+        set { userDefaults.set(newValue, forKey: Keys.showLiveMeetingIndicator) }
+    }
+
+    var launchAtLogin: Bool {
+        get { userDefaults.object(forKey: Keys.launchAtLogin) as? Bool ?? false }
+        set { userDefaults.set(newValue, forKey: Keys.launchAtLogin) }
+    }
+
+    var notifyScheduledMeetings: Bool {
+        get { userDefaults.object(forKey: Keys.notifyScheduledMeetings) as? Bool ?? true }
+        set { userDefaults.set(newValue, forKey: Keys.notifyScheduledMeetings) }
     }
 }

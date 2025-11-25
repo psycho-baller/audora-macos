@@ -8,11 +8,13 @@
 import SwiftUI
 import Sparkle
 import PostHog
+import EventKit
 
 @main
 struct AudoraApp: App {
     private let updaterController: SPUStandardUpdaterController
     @StateObject private var settingsViewModel = SettingsViewModel()
+    @StateObject private var menuBarViewModel = MenuBarViewModel()
 
     init() {
         updaterController = SPUStandardUpdaterController(updaterDelegate: nil, userDriverDelegate: nil)
@@ -36,6 +38,11 @@ struct AudoraApp: App {
         // Start meeting app detection
         MeetingAppDetector.shared.startMonitoring()
         MeetingAppDetector.shared.onOpenSettings = {}
+
+        // Initialize managers
+        _ = NotificationManager.shared
+        // Ensure launch at login state is consistent (optional, but good practice)
+        // LaunchAtLoginManager.shared.setLaunchAtLogin(enabled: UserDefaultsManager.shared.launchAtLogin)
     }
 
     var body: some Scene {
@@ -54,7 +61,7 @@ struct AudoraApp: App {
         }
 
         // Menu bar extra
-        SwiftUI.MenuBarExtra("Audora", systemImage: "bolt.fill") {
+        MenuBarExtra(content: {
             Button("New Recording") {
                 // This would need to be coordinated with the app state
                 NotificationCenter.default.post(name: .createNewRecording, object: nil)
@@ -63,9 +70,11 @@ struct AudoraApp: App {
 
             Divider()
 
-
-
-            Divider()
+            if let nextEvent = menuBarViewModel.nextEvent {
+                Text("Next: \(nextEvent.title)")
+                Text(nextEvent.startDate, style: .relative)
+                Divider()
+            }
 
             SettingsLink {
                 Text("Open Settings...")
@@ -87,6 +96,35 @@ struct AudoraApp: App {
             Button("Quit Audora") {
                 NSApp.terminate(nil)
             }
+        }, label: {
+            if menuBarViewModel.showUpcomingInMenuBar, let nextEvent = menuBarViewModel.nextEvent {
+                HStack {
+                    Image(systemName: "bolt.fill")
+                    Text(nextEvent.title)
+                }
+            } else {
+                Image(systemName: "bolt.fill")
+            }
+        })
+    }
+}
+
+class MenuBarViewModel: ObservableObject {
+    @Published var nextEvent: EKEvent?
+    @Published var showUpcomingInMenuBar: Bool = true
+
+    init() {
+        // Subscribe to calendar updates
+        CalendarManager.shared.$nextEvent
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$nextEvent)
+
+        // Initial load
+        showUpcomingInMenuBar = UserDefaultsManager.shared.showUpcomingInMenuBar
+
+        // Listen for settings changes (simple polling or notification would be better, but this works for now)
+        Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+            self?.showUpcomingInMenuBar = UserDefaultsManager.shared.showUpcomingInMenuBar
         }
     }
 }
