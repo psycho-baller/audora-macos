@@ -8,6 +8,7 @@ struct MeetingListView: View {
     @State private var navigationPath = NavigationPath()
     @Binding var triggerNewRecording: Bool
     @Binding var triggerOpenSettings: Bool
+    @Environment(\.openSettings) private var openSettings
 
     // Default initializer for use without bindings
     init(settingsViewModel: SettingsViewModel,
@@ -40,8 +41,8 @@ struct MeetingListView: View {
             selectedMeeting = newMeeting
         }
         .onChange(of: triggerOpenSettings) { _, _ in
-            // Navigate to settings when triggered from menu bar
-            navigationPath.append("settings")
+            // Open settings window when triggered from menu bar
+            openSettings()
         }
     }
 
@@ -152,7 +153,7 @@ struct MeetingListView: View {
 
 
                     Button {
-                        navigationPath.append("settings")
+                        openSettings()
                     } label: {
                         Image(systemName: "gearshape")
                     }
@@ -169,9 +170,7 @@ struct MeetingListView: View {
                 }
             }
             .navigationDestination(for: String.self) { path in
-                if path == "settings" {
-                    SettingsView(viewModel: settingsViewModel, navigationPath: $navigationPath)
-                } else if path == "templates" {
+                if path == "templates" {
                     TemplateListView()
                 }
             }

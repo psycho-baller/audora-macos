@@ -4,7 +4,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
     case general = "General"
     case calendar = "Calendar"
     case notifications = "Notifications"
-    case ai = "AI Customization"
+    case ai = "AI Settings"
 
     var id: String { rawValue }
 
@@ -29,16 +29,53 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        NavigationSplitView {
-            List(SettingsTab.allCases, selection: $selectedTab) { tab in
-                NavigationLink(value: tab) {
-                    Label(tab.rawValue, systemImage: tab.icon)
-                        .padding(.vertical, 4)
+        HSplitView {
+            // Sidebar
+            VStack(alignment: .leading, spacing: 0) {
+                // Settings Title
+                Text("Settings")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 24)
+                    .padding(.bottom, 16)
+
+                // Tab List
+                VStack(spacing: 4) {
+                    ForEach(SettingsTab.allCases) { tab in
+                        Button {
+                            selectedTab = tab
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: tab.icon)
+                                    .font(.system(size: 16))
+                                    .frame(width: 20)
+                                    .foregroundColor(selectedTab == tab ? .accentColor : .secondary)
+
+                                Text(tab.rawValue)
+                                    .font(.system(size: 14))
+                                    .foregroundColor(selectedTab == tab ? .primary : .secondary)
+
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(selectedTab == tab ? Color.accentColor.opacity(0.15) : Color.clear)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
+                .padding(.horizontal, 12)
+
+                Spacer()
             }
-            .navigationTitle("Settings")
-            .listStyle(.sidebar)
-        } detail: {
+            .frame(width: 200)
+            .background(Color(NSColor.controlBackgroundColor))
+
+            // Detail View
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     switch selectedTab {
@@ -55,6 +92,7 @@ struct SettingsView: View {
                 .padding(24)
                 .frame(maxWidth: 800, alignment: .leading)
             }
+            .frame(maxWidth: .infinity)
         }
         .frame(minWidth: 700, minHeight: 500)
         .onAppear {
@@ -356,7 +394,7 @@ struct AISettingsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
-            Text("AI Customization")
+            Text("AI Settings")
                 .font(.title2)
                 .fontWeight(.semibold)
 
