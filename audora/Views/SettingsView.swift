@@ -29,17 +29,103 @@ struct SettingsView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("OpenAI API Key")
+                    Text("Transcript Model")
                         .font(.headline)
                         .foregroundColor(.primary)
+                    
+                    Picker("", selection: $viewModel.settings.modelSource) {
+                        ForEach(ModelSource.allCases) { source in
+                            Text(source.rawValue).tag(source)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                
+                // OpenAI settings
+                if viewModel.settings.modelSource == .openAI {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("OpenAI API Key")
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
 
-                    Text("Stored locally and encrypted in Keychain.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        Text("Stored locally and encrypted in Keychain.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
 
-                    SecureField("OpenAI API Key", text: $viewModel.settings.openAIKey)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(maxWidth: .infinity)
+                        SecureField("OpenAI API Key", text: $viewModel.settings.openAIKey)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                
+                // Local model download option
+                if viewModel.settings.modelSource == .local {
+                    // Filter and Sort LLM Models
+                    let llmModels = viewModel.availableModels
+                        .filter { $0.compatibleFrameworks.contains(.llamaCpp) }
+                        .sorted { ($0.memoryRequired ?? 0) < ($1.memoryRequired ?? 0) } // Smallest memory first
+
+                    VStack(alignment: .leading, spacing: 16) {
+                        // MARK: LLM Models
+                        if !llmModels.isEmpty {
+                            Text("LLM Models")
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+                            
+                            VStack(spacing: 8) {
+                                ForEach(llmModels, id: \.id) { model in
+                                    HStack {
+                                        Text(model.name)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                                        Spacer()
+
+                                        HStack(spacing: 12) {
+                                            if viewModel.loadedModel == model.id {
+                                                Text("Loaded")
+                                                    .foregroundColor(.green)
+                                                    .bold()
+                                                    .frame(width: 80, height: 32) // <-- fixed height
+                                                    .cornerRadius(6)
+                                                    .multilineTextAlignment(.center)
+                                            } else if viewModel.downloadedModels.contains(model.id) {
+                                                Button("Load") {
+                                                    Task { try await viewModel.loadModel(model) }
+                                                }
+                                                .buttonStyle(.borderedProminent)
+                                                .frame(width: 80, height: 32) // <-- same fixed height
+                                            } else {
+                                                Button("Download") {
+                                                    Task { await viewModel.downloadModel(model) }
+                                                }
+                                                .buttonStyle(.bordered)
+                                                .frame(width: 80, height: 32) // <-- same fixed height
+                                            }
+
+                                            // Delete button
+                                            Button(role: .destructive) {
+                                                Task { await viewModel.deleteModel(model) }
+                                            } label: {
+                                                Image(systemName: "trash")
+                                                    .foregroundColor(.red)
+                                            }
+                                            .buttonStyle(.plain)
+                                        }
+                                    }
+                                    .padding()
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color.gray.opacity(0.3))
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    .task {
+                        await viewModel.fetchAvailableModels()
+                    }
                 }
 
                 // Auto-Recording Section

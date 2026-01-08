@@ -1,15 +1,71 @@
 import Foundation
 import SwiftUI
 import PostHog
+import RunAnywhere
 
+@MainActor
 class SettingsViewModel: ObservableObject {
     @Published var settings = Settings()
     @Published var saveMessage = ""
     @Published var showingSaveMessage = false
     @Published var templates: [NoteTemplate] = []
     
+    @Published var availableModels: [ModelInfo] = []
+    @Published var downloadedModels: Set<String> = []
+    
+    @Published var loadedModel: String? = nil
+    
     init() {
         loadTemplates()
+        loadedModel = settings.loadedModel
+    }
+    
+    func fetchAvailableModels() async {
+        do {
+            availableModels = try await RunAnywhere.availableModels()
+            
+            downloadedModels = Set(
+                availableModels
+                    .filter { $0.localPath != nil }
+                    .map(\.id)
+            )
+        } catch {
+            print("Failed to fetch models: \(error)")
+        }
+    }
+    
+    func downloadModel(_ model: ModelInfo) async {
+        do {
+            try await RunAnywhere.downloadModel(model.id)
+            downloadedModels.insert(model.id)
+        } catch {
+            print("Failed to download model: \(error)")
+        }
+    }
+
+    func loadModel(_ model: ModelInfo) async {
+        do {
+            try await RunAnywhere.loadModel(model.id)
+            
+            loadedModel = model.id
+            settings.loadedModel = model.id
+        } catch {
+            print("Failed to load model: \(error)")
+        }
+    }
+
+    func deleteModel(_ model: ModelInfo) async {
+        do {
+            try await RunAnywhere.deleteModel(model.id)
+            downloadedModels.remove(model.id)
+            
+            if loadedModel == model.id {
+                loadedModel = nil
+                settings.loadedModel = nil
+            }
+        } catch {
+            print("Failed to delete model: \(error)")
+        }
     }
     
     /// Loads the API key from keychain (only called when actually needed)

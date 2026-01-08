@@ -1,5 +1,12 @@
 import Foundation
 
+enum ModelSource: String, CaseIterable, Identifiable, Codable {
+    case openAI = "OpenAI API"
+    case local = "Local Model"
+
+    var id: String { rawValue }
+}
+
 struct Settings: Codable {
     // Only store API key in memory - will be loaded from keychain when needed
     var openAIKey: String = ""
@@ -41,6 +48,16 @@ struct Settings: Codable {
     var micFollowingEnabled: Bool {
         get { UserDefaultsManager.shared.micFollowingEnabled }
         set { UserDefaultsManager.shared.micFollowingEnabled = newValue }
+    }
+    
+    var modelSource: ModelSource {
+        get { UserDefaultsManager.shared.modelSource }
+        set { UserDefaultsManager.shared.modelSource = newValue }
+    }
+    
+    var loadedModel: String? {
+        get { UserDefaultsManager.shared.loadedModel }
+        set { UserDefaultsManager.shared.loadedModel = newValue }
     }
     
     // System prompt default loading

@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		919ACA362F0C496800CFBE9E /* FluidAudioDiarization in Frameworks */ = {isa = PBXBuildFile; productRef = 919ACA352F0C496800CFBE9E /* FluidAudioDiarization */; };
+		919ACA382F0C496800CFBE9E /* LLMSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 919ACA372F0C496800CFBE9E /* LLMSwift */; };
+		919ACA3A2F0C496800CFBE9E /* RunAnywhere in Frameworks */ = {isa = PBXBuildFile; productRef = 919ACA392F0C496800CFBE9E /* RunAnywhere */; };
+		919ACA3C2F0C496800CFBE9E /* WhisperKitTranscription in Frameworks */ = {isa = PBXBuildFile; productRef = 919ACA3B2F0C496800CFBE9E /* WhisperKitTranscription */; };
 		CC5718382E2020490042BA88 /* OpenAI in Frameworks */ = {isa = PBXBuildFile; productRef = CC5718372E2020490042BA88 /* OpenAI */; };
 		CCBA53E72E212F1C00469D84 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = CCBA53E62E212F1C00469D84 /* Sparkle */; };
 		CCC33F812E236B6F00EDE382 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = CCC33F802E236B6F00EDE382 /* PostHog */; };
@@ -30,8 +34,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				CCC33F812E236B6F00EDE382 /* PostHog in Frameworks */,
+				919ACA362F0C496800CFBE9E /* FluidAudioDiarization in Frameworks */,
 				CC5718382E2020490042BA88 /* OpenAI in Frameworks */,
+				919ACA382F0C496800CFBE9E /* LLMSwift in Frameworks */,
 				CCBA53E72E212F1C00469D84 /* Sparkle in Frameworks */,
+				919ACA3C2F0C496800CFBE9E /* WhisperKitTranscription in Frameworks */,
+				919ACA3A2F0C496800CFBE9E /* RunAnywhere in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -85,6 +93,10 @@
 				CC5718372E2020490042BA88 /* OpenAI */,
 				CCBA53E62E212F1C00469D84 /* Sparkle */,
 				CCC33F802E236B6F00EDE382 /* PostHog */,
+				919ACA352F0C496800CFBE9E /* FluidAudioDiarization */,
+				919ACA372F0C496800CFBE9E /* LLMSwift */,
+				919ACA392F0C496800CFBE9E /* RunAnywhere */,
+				919ACA3B2F0C496800CFBE9E /* WhisperKitTranscription */,
 			);
 			productName = audora;
 			productReference = CC5718182E201D8D0042BA88 /* audora.app */;
@@ -118,6 +130,7 @@
 				CC5718362E2020490042BA88 /* XCRemoteSwiftPackageReference "OpenAI" */,
 				CCBA53E52E212F1C00469D84 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				CCC33F7F2E236B6F00EDE382 /* XCRemoteSwiftPackageReference "posthog-ios" */,
+				919ACA342F0C496800CFBE9E /* XCLocalSwiftPackageReference "../runanywhere-sdks" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CC5718192E201D8D0042BA88 /* Products */;
@@ -282,7 +295,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"audora/Preview Content\"";
-				DEVELOPMENT_TEAM = 3V2UU7RRK9;
+				DEVELOPMENT_TEAM = 76D66BK4Y3;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -293,7 +306,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.6;
 				MARKETING_VERSION = 0.0.1;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D ENABLE_TCC_SPI";
@@ -318,7 +331,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"audora/Preview Content\"";
-				DEVELOPMENT_TEAM = 3V2UU7RRK9;
+				DEVELOPMENT_TEAM = 76D66BK4Y3;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -329,7 +342,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.6;
 				MARKETING_VERSION = 0.0.1;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D ENABLE_TCC_SPI";
@@ -364,6 +377,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		919ACA342F0C496800CFBE9E /* XCLocalSwiftPackageReference "../runanywhere-sdks" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../runanywhere-sdks";
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		CC5718362E2020490042BA88 /* XCRemoteSwiftPackageReference "OpenAI" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -392,6 +412,22 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		919ACA352F0C496800CFBE9E /* FluidAudioDiarization */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FluidAudioDiarization;
+		};
+		919ACA372F0C496800CFBE9E /* LLMSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LLMSwift;
+		};
+		919ACA392F0C496800CFBE9E /* RunAnywhere */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RunAnywhere;
+		};
+		919ACA3B2F0C496800CFBE9E /* WhisperKitTranscription */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = WhisperKitTranscription;
+		};
 		CC5718372E2020490042BA88 /* OpenAI */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = CC5718362E2020490042BA88 /* XCRemoteSwiftPackageReference "OpenAI" */;
