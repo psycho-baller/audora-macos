@@ -13,6 +13,11 @@ class APIKeyValidator {
     /// - Parameter apiKey: The API key to validate
     /// - Returns: Result indicating success or failure with error message
     func validateAPIKey(_ apiKey: String) async -> Result<Void, APIKeyValidationError> {
+        // Local models don't need an API key
+        if UserDefaultsManager.shared.modelSource == .local {
+            return .success(())
+        }
+        
         guard !apiKey.isEmpty else {
             return .failure(.emptyKey)
         }
@@ -56,6 +61,11 @@ class APIKeyValidator {
     /// Validates the currently stored API key
     /// - Returns: Result indicating success or failure with error message
     func validateCurrentAPIKey() async -> Result<Void, APIKeyValidationError> {
+        // Local models don't need an API key
+        if UserDefaultsManager.shared.modelSource == .local {
+            return .success(())
+        }
+
         guard let apiKey = KeychainHelper.shared.getAPIKey() else {
             return .failure(.emptyKey)
         }

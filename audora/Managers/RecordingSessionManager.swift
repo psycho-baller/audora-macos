@@ -12,7 +12,16 @@ class RecordingSessionManager: ObservableObject {
     @Published var errorMessage: String?
     @Published var activeRecordingTranscriptChunksUpdated: [TranscriptChunk] = []
     
-    private let audioManager = AudioManager.shared
+    // Dynamic audio manager based on model source
+    private var currentAudioManager: any AudioManagerProtocol {
+        switch UserDefaultsManager.shared.modelSource {
+        case .openAI:
+            return AudioManager.shared
+        case .local:
+            return LocalAudioManager.shared
+        }
+    }
+    
     private var cancellables = Set<AnyCancellable>()
     private let transcriptUpdateSubject = PassthroughSubject<[TranscriptChunk], Never>()
     
@@ -22,24 +31,50 @@ class RecordingSessionManager: ObservableObject {
     private init() {
         setupAudioManagerBindings()
         setupDebouncedSaving()
+        
+        // Listen for model source changes to rebind audio manager
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleModelSourceChange),
+            name: .modelSourceChanged,
+            object: nil
+        )
+    }
+    
+    @objc private func handleModelSourceChange() {
+        print("🔄 Model source changed, rebinding audio manager...")
+        
+        // Stop any active recording
+        if isRecording {
+            stopRecording()
+        }
+        
+        // Clear existing bindings
+        cancellables.removeAll()
+        
+        // Re-setup bindings with new audio manager
+        setupAudioManagerBindings()
+        setupDebouncedSaving()
     }
     
     private func setupAudioManagerBindings() {
+        let audioManager = currentAudioManager
+        
         // Bind to audio manager state
-        audioManager.$isRecording
+        audioManager.isRecordingPublisher
             .sink { [weak self] isRecording in
                 self?.isRecording = isRecording
             }
             .store(in: &cancellables)
         
-        audioManager.$errorMessage
+        audioManager.errorMessagePublisher
             .sink { [weak self] errorMessage in
                 self?.errorMessage = errorMessage
             }
             .store(in: &cancellables)
         
         // When transcript chunks change, store them for the active recording and send to debouncer
-        audioManager.$transcriptChunks
+        audioManager.transcriptChunksPublisher
             .sink { [weak self] newChunks in
                 guard let self = self, self.isRecording, self.activeMeetingId != nil else { return }
                 self.activeRecordingTranscriptChunks = newChunks
@@ -62,7 +97,10 @@ class RecordingSessionManager: ObservableObject {
     }
     
     func startRecording(for meetingId: UUID) {
-        print("🎙️ Starting recording for meeting: \(meetingId)")
+        let modelSource = UserDefaultsManager.shared.modelSource
+        print("🎙️ Starting recording for meeting: \(meetingId) using \(modelSource.rawValue)")
+        
+        let audioManager = currentAudioManager
         
         // Load the meeting to get existing transcript chunks
         if let existingMeeting = LocalStorageManager.shared.loadMeetings().first(where: { $0.id == meetingId }) {
@@ -78,7 +116,7 @@ class RecordingSessionManager: ObservableObject {
     func stopRecording() {
         print("🛑 Stopping recording for meeting: \(activeMeetingId?.uuidString ?? "unknown")")
         
-        audioManager.stopRecording()
+        currentAudioManager.stopRecording()
         
         // Perform a final, immediate save of transcript chunks to the meeting
         if let activeMeetingId = activeMeetingId {
@@ -129,4 +167,51 @@ class RecordingSessionManager: ObservableObject {
             return []
         }
     }
-} 
+}
+
+// MARK: - Audio Manager Protocol
+/// Protocol that both AudioManager and LocalAudioManager conform to
+protocol AudioManagerProtocol: AnyObject {
+    var transcriptChunks: [TranscriptChunk] { get set }
+    var isRecordingPublisher: AnyPublisher<Bool, Never> { get }
+    var errorMessagePublisher: AnyPublisher<String?, Never> { get }
+    var transcriptChunksPublisher: AnyPublisher<[TranscriptChunk], Never> { get }
+    
+    func startRecording()
+    func stopRecording()
+}
+
+// MARK: - AudioManager Extension
+extension AudioManager: AudioManagerProtocol {
+    var isRecordingPublisher: AnyPublisher<Bool, Never> {
+        $isRecording.eraseToAnyPublisher()
+    }
+    
+    var errorMessagePublisher: AnyPublisher<String?, Never> {
+        $errorMessage.eraseToAnyPublisher()
+    }
+    
+    var transcriptChunksPublisher: AnyPublisher<[TranscriptChunk], Never> {
+        $transcriptChunks.eraseToAnyPublisher()
+    }
+}
+
+// MARK: - LocalAudioManager Extension
+extension LocalAudioManager: AudioManagerProtocol {
+    var isRecordingPublisher: AnyPublisher<Bool, Never> {
+        $isRecording.eraseToAnyPublisher()
+    }
+    
+    var errorMessagePublisher: AnyPublisher<String?, Never> {
+        $errorMessage.eraseToAnyPublisher()
+    }
+    
+    var transcriptChunksPublisher: AnyPublisher<[TranscriptChunk], Never> {
+        $transcriptChunks.eraseToAnyPublisher()
+    }
+}
+
+// MARK: - Notification Names
+extension Notification.Name {
+    static let modelSourceChanged = Notification.Name("modelSourceChanged")
+}
