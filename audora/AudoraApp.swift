@@ -84,17 +84,24 @@ struct AudoraApp: App {
                 try await RunAnywhere.registerFrameworkAdapter(
                     WhisperKitAdapter.shared,
                     models: [
-                        // Whisper Base
+                        // Whisper Small (better accuracy than Base)
                         try ModelRegistration(
-                            url: "https://huggingface.co/argmaxinc/whisperkit-coreml/tree/main/openai_whisper-base",
+                            url: "https://huggingface.co/argmaxinc/whisperkit-coreml/tree/main/openai_whisper-small",
                             framework: .whisperKit,
-                            id: "whisper-base",
-                            name: "Whisper Base",
+                            id: "whisper-small",
+                            name: "Whisper Small",
                             format: .mlmodel,
-                            memoryRequirement: 74_000_000
+                            memoryRequirement: 244_000_000
                         ),
                     ]
                 )
+                
+                // You cannot load the STT models, so the one that is downloaded should be used
+                do {
+                    try await RunAnywhere.downloadModel("whisper-small")
+                } catch {
+                    print("Failed to download model: \(error)")
+                }
 
                 // Register FluidAudio for speaker diarization
                 await FluidAudioDiarizationProvider.register()
