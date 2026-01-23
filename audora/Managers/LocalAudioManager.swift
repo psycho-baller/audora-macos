@@ -1,5 +1,5 @@
 // LocalAudioManager.swift
-// On-device audio manager using RunAnywhere SDK for local transcription
+// Fixed streaming implementation for WhisperKit
 
 import AVFoundation
 import Foundation
@@ -10,7 +10,6 @@ import AppKit
 import RunAnywhere
 import WhisperKitTranscription
 
-/// Manages audio capture and on-device transcription using RunAnywhere SDK
 @MainActor
 class LocalAudioManager: NSObject, ObservableObject {
     static let shared = LocalAudioManager()
@@ -22,37 +21,36 @@ class LocalAudioManager: NSObject, ObservableObject {
     @Published var systemAudioLevel: Float = 0.0
 
     private var audioEngine = AVAudioEngine()
-    private var voicePipeline: ModularVoicePipeline?
+    private let whisperKitService = WhisperKitService()
     
-    // Unique identifier for the current recording session
+    // Audio streaming - with buffer accumulators
+    private var micAudioStream: AsyncStream<VoiceAudioChunk>.Continuation?
+    private var systemAudioStream: AsyncStream<VoiceAudioChunk>.Continuation?
+    private var micTranscriptionTask: Task<Void, Never>?
+    private var systemTranscriptionTask: Task<Void, Never>?
+    
+    // ✅ NEW: Audio accumulators for batching
+    private var micAccumulator: [Float] = []
+    private var systemAccumulator: [Float] = []
+    private let chunkSize = 16000 // 1 second at 16kHz
+    private var sequenceNumber = 0
+
     private var sessionID = UUID()
 
-    // ProcessTap properties for system audio
+    // ProcessTap properties
     private var processTap: ProcessTap?
     private let audioProcessController = AudioProcessController()
     private let permission = AudioRecordingPermission()
-    private let tapQueue = DispatchQueue(label: "io.audora.localtap", qos: .userInitiated)
+    private let tapQueue = DispatchQueue(label: "io.audora.localaudio", qos: .userInitiated)
     private var isTapActive = false
     private var isRestartingSystemTap = false
 
-    // Retry mechanism
     private var micRetryCount = 0
     private let maxMicRetries = 3
 
-    // Buffer for accumulating audio for transcription
-    private var micAudioBuffer: [Int16] = []
-    private var systemAudioBuffer: [Int16] = []
-    private let bufferSizeThreshold = 48000 // ~2 seconds at 24kHz
-    
-    // VAD for detecting speech
-    private var vadDetector: SimpleVAD?
-    private var isSpeaking = false
-    private var silenceFrames = 0
-    private let silenceThreshold = 20 // frames of silence before processing
-    
     private var cancellables = Set<AnyCancellable>()
 
-    // MARK: - Auto-Recording Properties
+    // Auto-Recording & Mic Following properties
     @Published var isAutoRecordingEnabled = false
     private var audioMonitor: SystemAudioMonitor?
     private var autoStartDelay: Timer?
@@ -60,7 +58,6 @@ class LocalAudioManager: NSObject, ObservableObject {
     private let startDelayTime: TimeInterval = 0.5
     private let stopDelayTime: TimeInterval = 3.0
 
-    // MARK: - Mic Following Properties
     @Published var isMicFollowingEnabled = false
     private var micMonitor: MicUsageMonitor?
     private var micFollowStartDelay: Timer?
@@ -74,29 +71,33 @@ class LocalAudioManager: NSObject, ObservableObject {
 
     private override init() {
         super.init()
-        
-        // Initialize VAD
-        vadDetector = SimpleVAD()
-        
-        NotificationCenter.default.addObserver(
-            forName: .AVAudioEngineConfigurationChange,
-            object: audioEngine,
-            queue: .main
-        ) { [weak self] _ in
+        NotificationCenter.default.addObserver(forName: .AVAudioEngineConfigurationChange,
+                                               object: audioEngine,
+                                               queue: .main) { [weak self] _ in
             self?.handleAudioEngineConfigurationChange()
         }
 
         audioProcessController.activate()
 
         NSWorkspace.shared.publisher(for: \.runningApplications)
-            .debounce(for: .seconds(1), scheduler: RunLoop.main)
+            .debounce(for: .seconds(2), scheduler: RunLoop.main)
             .sink { [weak self] _ in
-                guard let self, self.isTapActive else { return }
+                guard let self, self.isRecording, !self.isRestartingSystemTap else { return }
                 Task {
                     await self.restartSystemAudioTapIfNeeded()
                 }
             }
             .store(in: &cancellables)
+        
+        // Initialize WhisperKit service
+        Task {
+            do {
+                try await whisperKitService.initialize(modelPath: nil)
+                print("✅ WhisperKit service initialized")
+            } catch {
+                print("❌ Failed to initialize WhisperKit: \(error)")
+            }
+        }
     }
 
     deinit {
@@ -104,38 +105,24 @@ class LocalAudioManager: NSObject, ObservableObject {
     }
 
     func startRecording() {
-        print("🎙️ Starting local recording...")
+        print("🎙️ Starting streaming recording...")
 
-        // Start a new session
         sessionID = UUID()
         errorMessage = nil
-
-        // Stop any previous recording cleanly
         stopRecordingInternal()
 
-        // Start audio taps for microphone and system audio
+        guard whisperKitService.isReady else {
+            print("❌ WhisperKit not ready")
+            self.errorMessage = "Local transcription service not ready. Please try again."
+            return
+        }
+
+        // Start microphone capture
         startMicrophoneTap()
         
+        // Start system audio capture
         Task {
-            await startSystemAudioTap()
-        }
-    }
-
-    private func startMicrophoneOnlyRecording() {
-        print("🎤 Starting microphone-only local recording...")
-        
-        sessionID = UUID()
-        
-        DispatchQueue.main.async {
-            self.errorMessage = nil
-        }
-
-        stopRecordingInternal()
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            self.startMicrophoneTap()
-            self.isRecording = true
-            AudioLevelManager.shared.updateRecordingState(true)
+            await self.startSystemAudioTap()
         }
     }
 
@@ -149,58 +136,55 @@ class LocalAudioManager: NSObject, ObservableObject {
         }
 
         cleanupAudioEngine()
+
+        // Cancel transcription tasks
+        micTranscriptionTask?.cancel()
+        micTranscriptionTask = nil
+        systemTranscriptionTask?.cancel()
+        systemTranscriptionTask = nil
         
-        // Process any remaining audio in buffers
-        processRemainingAudio()
+        // Finish audio streams
+        micAudioStream?.finish()
+        micAudioStream = nil
+        systemAudioStream?.finish()
+        systemAudioStream = nil
+        
+        // Clear accumulators
+        micAccumulator.removeAll()
+        systemAccumulator.removeAll()
+        sequenceNumber = 0
 
         print("✅ Internal cleanup completed")
     }
 
-    private func restartMicrophone() {
-        guard isRecording, micRetryCount < maxMicRetries else { return }
-
-        print("🔄 Restarting microphone (attempt \(micRetryCount + 1))")
-        micRetryCount += 1
-
-        cleanupAudioEngine()
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            self.startMicrophoneTap()
-        }
-    }
-
     private func startMicrophoneTap() {
-        print("🎤 Starting local microphone tap...")
+        print("🎤 Starting microphone tap...")
+        
+        audioEngine.stop()
+        audioEngine.inputNode.removeTap(onBus: 0)
+
+        let inputNode = audioEngine.inputNode
+        let recordingFormat = inputNode.outputFormat(forBus: 0)
+
+        guard recordingFormat.sampleRate > 0 else {
+            print("⚠️ Hardware not ready, retrying...")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.startMicrophoneTap() }
+            return
+        }
 
         do {
-            let inputNode = audioEngine.inputNode
-            let recordingFormat = inputNode.outputFormat(forBus: 0)
-
-            guard let targetFormat = AVAudioFormat(
-                commonFormat: .pcmFormatInt16,
-                sampleRate: 16000, // WhisperKit uses 16kHz
-                channels: 1,
-                interleaved: false
-            ) else {
+            guard let targetFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 16000, channels: 1, interleaved: false) else {
                 print("❌ Failed to create target format")
-                self.restartMicrophone()
                 return
             }
-
+            
             guard let converter = AVAudioConverter(from: recordingFormat, to: targetFormat) else {
-                print("❌ Failed to create audio converter")
-                self.restartMicrophone()
+                print("❌ Failed to create converter")
                 return
             }
 
             inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
                 guard let self = self else { return }
-
-                guard buffer.frameLength > 0, buffer.floatChannelData != nil else {
-                    print("❌ Invalid mic buffer - restarting")
-                    self.restartMicrophone()
-                    return
-                }
 
                 // Calculate audio level
                 if let ch = buffer.floatChannelData?[0] {
@@ -214,81 +198,67 @@ class LocalAudioManager: NSObject, ObservableObject {
                     }
                 }
 
-                self.activityTracker?.onAudioBuffer(buffer)
                 self.processAudioBuffer(buffer, converter: converter, targetFormat: targetFormat, source: .mic)
             }
 
             audioEngine.prepare()
             try audioEngine.start()
-            print("✅ Local microphone tap started")
-            micRetryCount = 0
+            
+            // Start transcription stream
+            startLocalTranscription(source: .mic)
+            
+            print("✅ Microphone tap started")
 
         } catch {
-            print("❌ Failed to start mic tap: \(error)")
-            self.restartMicrophone()
+            print("❌ Engine error: \(error)")
         }
     }
-
+    
     private func cleanupAudioEngine() {
-        print("🧹 Cleaning up audio engine...")
-
         if audioEngine.isRunning {
             audioEngine.stop()
         }
-
         audioEngine.inputNode.removeTap(onBus: 0)
         audioEngine.reset()
-        audioEngine = AVAudioEngine()
-        
-        print("✨ Fresh audio engine created")
     }
 
     private func startSystemAudioTap(isRestart: Bool = false) async {
-        print(isRestart ? "🎧 Restarting system audio tap..." : "🎧 Starting system audio tap...")
-
+        print("🎧 Starting system audio tap...")
+        
         if !isRestart {
             guard await checkSystemAudioPermissions() else {
-                let errorMsg = "System audio recording permission denied."
-                print("❌ \(errorMsg)")
-                self.errorMessage = errorMsg
+                self.errorMessage = "System audio recording permission denied."
                 return
             }
         }
-
+        
         let allProcessObjectIDs = audioProcessController.processes.map { $0.objectID }
-        if allProcessObjectIDs.isEmpty {
-            print("⚠️ No audio-producing processes found")
-        }
-
         let target = TapTarget.systemAudio(processObjectIDs: allProcessObjectIDs)
         let newTap = ProcessTap(target: target)
         newTap.activate()
-
+        
         if let tapError = newTap.errorMessage {
-            let errorMsg = "Failed to activate system audio tap: \(tapError)"
-            print("❌ \(errorMsg)")
-            self.errorMessage = errorMsg
+            self.errorMessage = "Failed to activate system audio tap: \(tapError)"
             if !isRestart { stopRecording() }
             return
         }
-
+        
         self.processTap = newTap
         self.isTapActive = true
-
+        
         do {
             try startTapIO(newTap)
-
+            
             if !isRestart {
+                startLocalTranscription(source: .system)
                 self.isRecording = true
                 AudioLevelManager.shared.updateRecordingState(true)
                 self.startAudioMonitoringIfNeeded()
             }
             print("✅ System audio tap started")
-
+            
         } catch {
-            let errorMsg = "Failed to start system audio tap IO: \(error.localizedDescription)"
-            print("❌ \(errorMsg)")
-            self.errorMessage = errorMsg
+            self.errorMessage = "Failed to start system audio tap IO: \(error.localizedDescription)"
             newTap.invalidate()
             self.isTapActive = false
             if !isRestart { stopRecording() }
@@ -306,18 +276,12 @@ class LocalAudioManager: NSObject, ObservableObject {
         }
 
         if newProcessObjectIDs != currentProcessObjectIDs {
-            print("🔄 Process list changed, restarting tap")
             await restartSystemAudioTap()
         }
     }
 
     private func restartSystemAudioTap() async {
-        print("🔄 Restarting system audio tap...")
-
-        guard isRecording else {
-            print("⚠️ Recording stopped, aborting restart")
-            return
-        }
+        guard isRecording else { return }
 
         isRestartingSystemTap = true
         defer { isRestartingSystemTap = false }
@@ -329,11 +293,7 @@ class LocalAudioManager: NSObject, ObservableObject {
         }
 
         try? await Task.sleep(for: .milliseconds(250))
-
-        guard self.isRecording else {
-            print("⚠️ Recording stopped during restart")
-            return
-        }
+        guard self.isRecording else { return }
 
         await startSystemAudioTap(isRestart: true)
     }
@@ -358,13 +318,11 @@ class LocalAudioManager: NSObject, ObservableObject {
 
     private func startTapIO(_ tap: ProcessTap) throws {
         guard var streamDescription = tap.tapStreamDescription else {
-            throw NSError(domain: "LocalAudioManager", code: -1, 
-                         userInfo: [NSLocalizedDescriptionKey: "Failed to get audio format"])
+            throw NSError(domain: "LocalAudioManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to get audio format from tap."])
         }
 
         guard let format = AVAudioFormat(streamDescription: &streamDescription) else {
-            throw NSError(domain: "LocalAudioManager", code: -1,
-                         userInfo: [NSLocalizedDescriptionKey: "Failed to create AVAudioFormat"])
+            throw NSError(domain: "LocalAudioManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to create AVAudioFormat from tap."])
         }
 
         try tap.run(on: tapQueue) { [weak self] _, inInputData, _, _, _ in
@@ -373,12 +331,10 @@ class LocalAudioManager: NSObject, ObservableObject {
                 return
             }
 
-            let targetFormat = AVAudioFormat(
-                commonFormat: .pcmFormatInt16,
-                sampleRate: 16000,
-                channels: 1,
-                interleaved: false
-            )!
+            let targetFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32,
+                                           sampleRate: 16000,
+                                           channels: 1,
+                                           interleaved: false)!
 
             guard let converter = AVAudioConverter(from: format, to: targetFormat) else {
                 return
@@ -399,11 +355,9 @@ class LocalAudioManager: NSObject, ObservableObject {
             self.processAudioBuffer(buffer, converter: converter, targetFormat: targetFormat, source: .system)
 
         } invalidationHandler: { [weak self] _ in
-            guard let self else { return }
-            print("⚠️ Audio tap invalidated")
+            guard let self = self else { return }
 
             if !self.isRestartingSystemTap {
-                print("🔄 Unexpected invalidation, restarting")
                 Task {
                     await self.restartSystemAudioTap()
                 }
@@ -412,26 +366,39 @@ class LocalAudioManager: NSObject, ObservableObject {
     }
 
     func stopRecording() {
+        guard isRecording else { return }
         self.isRecording = false
         AudioLevelManager.shared.updateRecordingState(false)
-        print("⏹️ Stopping local recording...")
-
-        micAudioLevel = 0.0
-        systemAudioLevel = 0.0
-        AudioLevelManager.shared.updateMicLevel(0.0)
-        AudioLevelManager.shared.updateSystemLevel(0.0)
+        print("⏹️ Stopping recording...")
 
         if isTapActive {
             self.processTap?.invalidate()
             self.processTap = nil
             isTapActive = false
         }
-
-        cleanupAudioEngine()
-        micRetryCount = 0
         
-        // Process remaining audio
-        processRemainingAudio()
+        if audioEngine.isRunning {
+            audioEngine.stop()
+        }
+        audioEngine.inputNode.removeTap(onBus: 0)
+
+        // ✅ Flush any remaining audio before finishing streams
+        flushAccumulatedAudio(source: .mic)
+        flushAccumulatedAudio(source: .system)
+
+        // Finish the streams
+        micAudioStream?.finish()
+        systemAudioStream?.finish()
+
+        micTranscriptionTask = nil
+        systemTranscriptionTask = nil
+        micAudioStream = nil
+        systemAudioStream = nil
+
+        micAudioLevel = 0.0
+        systemAudioLevel = 0.0
+        AudioLevelManager.shared.updateMicLevel(0.0)
+        AudioLevelManager.shared.updateSystemLevel(0.0)
 
         if isRecordingDueToMicFollowing {
             isRecordingDueToMicFollowing = false
@@ -439,16 +406,12 @@ class LocalAudioManager: NSObject, ObservableObject {
             activityTracker = nil
         }
 
-        print("✅ Local recording stopped")
+        print("✅ Recording stopped")
     }
 
-    private func processAudioBuffer(_ buffer: AVAudioPCMBuffer, converter: AVAudioConverter, 
-                                   targetFormat: AVAudioFormat, source: AudioSource) {
-        // Convert to target format
-        let outputFrameCapacity = AVAudioFrameCount(
-            Double(buffer.frameLength) * targetFormat.sampleRate / buffer.format.sampleRate
-        )
-        
+    // ✅ NEW: Process audio buffer with accumulation
+    private func processAudioBuffer(_ buffer: AVAudioPCMBuffer, converter: AVAudioConverter, targetFormat: AVAudioFormat, source: AudioSource) {
+        let outputFrameCapacity = AVAudioFrameCount(Double(buffer.frameLength) * targetFormat.sampleRate / buffer.format.sampleRate)
         guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: outputFrameCapacity) else {
             return
         }
@@ -463,228 +426,209 @@ class LocalAudioManager: NSObject, ObservableObject {
             return
         }
 
-        guard let channelData = outputBuffer.int16ChannelData?[0] else {
+        guard let channelData = outputBuffer.floatChannelData?[0] else {
             return
         }
 
         let frameCount = Int(outputBuffer.frameLength)
         let samples = Array(UnsafeBufferPointer(start: channelData, count: frameCount))
         
-        // Add to appropriate buffer
-        switch source {
-        case .mic:
-            micAudioBuffer.append(contentsOf: samples)
-            
-            // Check VAD and process when we have enough data
-            if let vad = vadDetector {
-                let isSpeechDetected = vad.isSpeech(samples: samples)
-                
-                if isSpeechDetected {
-                    isSpeaking = true
-                    silenceFrames = 0
-                } else if isSpeaking {
-                    silenceFrames += 1
-                    
-                    // If we've had enough silence, process the accumulated audio
-                    if silenceFrames >= silenceThreshold {
-                        processAccumulatedAudio(source: .mic)
-                        isSpeaking = false
-                        silenceFrames = 0
-                    }
-                }
-            }
-            
-            // Also process if buffer is too large
-            if micAudioBuffer.count >= bufferSizeThreshold * 5 {
-                processAccumulatedAudio(source: .mic)
-            }
-            
-        case .system:
-            systemAudioBuffer.append(contentsOf: samples)
-            
-            // Process system audio in larger chunks (every 3 seconds)
-            if systemAudioBuffer.count >= bufferSizeThreshold * 3 {
-                processAccumulatedAudio(source: .system)
-            }
-        }
-    }
-
-    private func processAccumulatedAudio(source: AudioSource) {
-        let buffer = source == .mic ? micAudioBuffer : systemAudioBuffer
-        
-        guard !buffer.isEmpty else { return }
-        
-        // Create audio data
-        let audioData = Data(bytes: buffer, count: buffer.count * 2)
-        
-        // Transcribe using RunAnywhere
-        Task {
-            do {
-                let result = try await transcribeAudio(audioData, source: source)
-                
-                if !result.isEmpty {
-                    await MainActor.run {
-                        let chunk = TranscriptChunk(
-                            timestamp: Date(),
-                            source: source,
-                            text: result,
-                            isFinal: true
-                        )
-                        self.transcriptChunks.append(chunk)
-                        self.activityTracker?.onTranscriptActivity()
-                    }
-                }
-            } catch {
-                print("❌ Transcription error: \(error)")
-            }
-        }
-        
-        // Clear the buffer
+        // Add to accumulator
         if source == .mic {
-            micAudioBuffer.removeAll()
+            micAccumulator.append(contentsOf: samples)
+            
+            // Send when we have enough (1 second chunks)
+            if micAccumulator.count >= chunkSize {
+                sendAccumulatedAudio(source: .mic)
+            }
         } else {
-            systemAudioBuffer.removeAll()
+            systemAccumulator.append(contentsOf: samples)
+            
+            // Send when we have enough (1 second chunks)
+            if systemAccumulator.count >= chunkSize {
+                sendAccumulatedAudio(source: .system)
+            }
         }
     }
 
-    private func processRemainingAudio() {
-        if !micAudioBuffer.isEmpty {
-            processAccumulatedAudio(source: .mic)
-        }
-        if !systemAudioBuffer.isEmpty {
-            processAccumulatedAudio(source: .system)
-        }
-    }
-
-    private func transcribeAudio(_ audioData: Data, source: AudioSource) async throws -> String {
-        print("📋 Audio Data: \(audioData.count) bytes")
+    // ✅ NEW: Send accumulated audio as chunk
+    private func sendAccumulatedAudio(source: AudioSource) {
+        let samples = source == .mic ? micAccumulator : systemAccumulator
         
-        guard !audioData.isEmpty else {
-            print("❌ Empty audio data")
-            return ""
-        }
-
-        // Create proper audio format for WhisperKit
-        guard let format = AVAudioFormat(
-            commonFormat: .pcmFormatFloat32,  // WhisperKit expects Float32
+        guard !samples.isEmpty else { return }
+        
+        let chunk = VoiceAudioChunk(
+            samples: samples,
+            timestamp: Date().timeIntervalSince1970,
             sampleRate: 16000,
             channels: 1,
-            interleaved: false
-        ) else {
-            print("❌ Failed to create audio format")
-            return ""
-        }
-
-        // Convert Int16 samples to Float32
-        let sampleCount = audioData.count / 2  // Int16 = 2 bytes per sample
-        var int16Samples = [Int16](repeating: 0, count: sampleCount)
-        _ = int16Samples.withUnsafeMutableBytes { audioData.copyBytes(to: $0) }
+            sequenceNumber: sequenceNumber,
+            isFinal: false
+        )
         
-        // Normalize to Float32 [-1.0, 1.0]
-        let floatSamples = int16Samples.map { Float($0) / Float(Int16.max) }
+        sequenceNumber += 1
         
-        print("🎵 Audio stats - samples: \(floatSamples.count), duration: \(Float(floatSamples.count) / 16000.0)s")
-        
-        // Check if audio has actual content
-        let maxAmplitude = floatSamples.map { abs($0) }.max() ?? 0.0
-        let rms = sqrt(floatSamples.map { $0 * $0 }.reduce(0, +) / Float(floatSamples.count))
-        print("🎵 Audio energy - max: \(maxAmplitude), rms: \(rms)")
-        
-        if rms < 0.001 {
-            print("⚠️ Audio too quiet, skipping transcription")
-            return ""
-        }
-
-        // Create audio buffer
-        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(floatSamples.count)) else {
-            print("❌ Failed to create audio buffer")
-            return ""
-        }
-        
-        buffer.frameLength = buffer.frameCapacity
-        if let channelData = buffer.floatChannelData?[0] {
-            channelData.initialize(from: floatSamples, count: floatSamples.count)
-        }
-
-        // Convert buffer to Data that WhisperKit expects
-        let properAudioData = Data(bytes: buffer.floatChannelData![0],
-                                   count: Int(buffer.frameLength) * MemoryLayout<Float>.size)
-
-        // Setup WhisperKit
-        let config = STTConfiguration(modelId: "whisper-base")
-        guard let sttService = try await WhisperKitServiceProvider.shared.createSTTService(configuration: config) as? WhisperKitService else {
-            throw VoiceError.serviceNotInitialized
-        }
-        
-        if !sttService.isReady {
-            print("🔧 Initializing WhisperKit...")
-            try await sttService.initialize(modelPath: nil)
-        }
-
-        let options = STTOptions()
-        print("🚀 Transcribing...")
-        
-        let result = try await sttService.transcribe(audioData: properAudioData, options: options)
-        
-        if result.transcript.isEmpty {
-            print("⚠️ Empty transcript returned")
+        if source == .mic {
+            if let stream = micAudioStream {
+                print("📤 [Mic] Sending \(samples.count) samples (\(Float(samples.count)/16000.0)s)")
+                stream.yield(chunk)
+            }
+            micAccumulator.removeAll()
         } else {
-            print("✅ Transcript: \"\(result.transcript)\"")
+            if let stream = systemAudioStream {
+                print("📤 [System] Sending \(samples.count) samples (\(Float(samples.count)/16000.0)s)")
+                stream.yield(chunk)
+            }
+            systemAccumulator.removeAll()
+        }
+    }
+
+    // ✅ NEW: Flush remaining audio when stopping
+    private func flushAccumulatedAudio(source: AudioSource) {
+        let samples = source == .mic ? micAccumulator : systemAccumulator
+        
+        guard samples.count > 1600 else { return } // Only flush if we have meaningful audio (>0.1s)
+        
+        let chunk = VoiceAudioChunk(
+            samples: samples,
+            timestamp: Date().timeIntervalSince1970,
+            sampleRate: 16000,
+            channels: 1,
+            sequenceNumber: sequenceNumber,
+            isFinal: true  // Mark as final
+        )
+        
+        sequenceNumber += 1
+        
+        if source == .mic {
+            micAudioStream?.yield(chunk)
+            micAccumulator.removeAll()
+        } else {
+            systemAudioStream?.yield(chunk)
+            systemAccumulator.removeAll()
+        }
+    }
+
+    // ✅ FIXED: Detached task for transcription
+    private func startLocalTranscription(source: AudioSource) {
+        print("🎯 Starting transcription for \(source)...")
+        
+        let (stream, continuation) = AsyncStream<VoiceAudioChunk>.makeStream()
+        
+        if source == .mic {
+            micAudioStream = continuation
+        } else {
+            systemAudioStream = continuation
         }
         
-        return result.transcript
+        // ✅ Use detached task to avoid main actor blocking
+        let task = Task.detached(priority: .userInitiated) { [weak self] in
+            let options = STTOptions(language: "en")
+            print("🧠 [AI Loop] Started for \(source)")
+            
+            do {
+                guard let whisperKitService = await self?.whisperKitService else { return }
+                
+                for try await segment in whisperKitService.transcribeStream(audioStream: stream, options: options) {
+                    print("📥 [AI] \(source): \(segment.text)")
+                    
+                    guard let self = self else { return }
+                    await self.handleTranscriptionSegment(segment, source: source)
+                }
+                print("🏁 [AI Loop] Ended for \(source)")
+            } catch {
+                if !Task.isCancelled {
+                    print("❌ [AI Loop] Error for \(source): \(error)")
+                }
+            }
+        }
+        
+        if source == .mic {
+            micTranscriptionTask = task
+        } else {
+            systemTranscriptionTask = task
+        }
+        
+        print("✅ Transcription setup complete for \(source)")
+    }
+    
+    @MainActor
+    private func handleTranscriptionSegment(_ segment: STTSegment, source: AudioSource) {
+        let text = segment.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard !text.isEmpty else { return }
+        
+        let sourceLabel = source == .mic ? "🎙️ MIC" : "🖥️ SYS"
+        
+        if segment.confidence > 0.9 {
+            print("\(sourceLabel) [FINAL]: \(text)")
+
+            self.transcriptChunks.removeAll { !$0.isFinal && $0.source == source }
+            
+            let chunk = TranscriptChunk(
+                timestamp: Date(),
+                source: source,
+                text: text,
+                isFinal: true
+            )
+            self.transcriptChunks.append(chunk)
+            self.activityTracker?.onTranscriptActivity()
+            
+        } else {
+            print("\(sourceLabel) [INTERIM]: \(text)")
+            
+            self.transcriptChunks.removeAll { !$0.isFinal && $0.source == source }
+            
+            let chunk = TranscriptChunk(
+                timestamp: Date(),
+                source: source,
+                text: text,
+                isFinal: false
+            )
+            self.transcriptChunks.append(chunk)
+        }
     }
 
     private func handleAudioEngineConfigurationChange() {
         print("🔔 Audio configuration changed")
-        restartMicrophone()
+        if micRetryCount < maxMicRetries {
+            micRetryCount += 1
+            cleanupAudioEngine()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                self.startMicrophoneTap()
+            }
+        }
     }
 
-    // MARK: - Auto-Recording Methods
-
+    // MARK: - Auto-Recording & Mic Following
+    // (Keep your existing implementations...)
+    
     func enableAutoRecording() {
         guard !isAutoRecordingEnabled else { return }
-        print("🎯 Enabling auto-recording (local)...")
         isAutoRecordingEnabled = true
-
         audioMonitor = SystemAudioMonitor()
         audioMonitor?.onAudioStateChanged = { [weak self] state in
             Task { @MainActor in
                 self?.handleSystemAudioStateChange(state)
             }
         }
-
-        print("✅ Auto-recording enabled (local)")
     }
 
     private func startAudioMonitoringIfNeeded() {
         guard isAutoRecordingEnabled, let monitor = audioMonitor else { return }
         guard !monitor.isMonitoring else { return }
-
-        print("🎧 Starting audio monitoring...")
-        do {
-            try monitor.startMonitoring()
-            print("✅ Audio monitoring active")
-        } catch {
-            print("❌ Failed to start monitoring: \(error)")
-            errorMessage = "Failed to start audio monitoring: \(error.localizedDescription)"
-        }
+        try? monitor.startMonitoring()
     }
 
     func disableAutoRecording() {
         guard isAutoRecordingEnabled else { return }
-        print("🛑 Disabling auto-recording (local)...")
-
         audioMonitor?.stopMonitoring()
         audioMonitor = nil
-
         autoStartDelay?.invalidate()
         autoStartDelay = nil
         autoStopDelay?.invalidate()
         autoStopDelay = nil
-
         isAutoRecordingEnabled = false
-        print("✅ Auto-recording disabled")
     }
 
     private func handleSystemAudioStateChange(_ state: SystemAudioMonitor.AudioState) {
@@ -804,7 +748,7 @@ class LocalAudioManager: NSObject, ObservableObject {
                 self.isRecordingDueToMicFollowing = true
                 self.activityTracker = ActivityTracker()
                 self.createMicFollowingSession()
-                self.startMicrophoneOnlyRecording()
+//                self.startMicrophoneOnlyRecording()
                 self.startSilenceProbeTimer()
             }
         }
