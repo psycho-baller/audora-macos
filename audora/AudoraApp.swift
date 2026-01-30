@@ -109,6 +109,10 @@ struct AudoraApp: App {
                             try await RunAnywhere.downloadModel(largeModel.id)
                             print("✅ Download complete")
                         }
+                        
+                        // 5️⃣ Load the model using ModelInfo
+                        let _ = try await WhisperKitAdapter.shared.loadModel(modelInfo, for: .voiceToText)
+                        print("✅ WhisperKit is now using model: \(modelInfo.id) for voice-to-text")
                     } else {
                         print("❌ Model not found in available models")
                     }

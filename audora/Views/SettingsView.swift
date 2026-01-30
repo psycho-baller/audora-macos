@@ -41,6 +41,9 @@ struct SettingsView: View {
                     .pickerStyle(.menu)
                     .labelsHidden()
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .onChange(of: viewModel.settings.modelSource) { newValue in
+                        print("Selected model: \(newValue.rawValue)")
+                    }
                 }
                 
                 // OpenAI settings
