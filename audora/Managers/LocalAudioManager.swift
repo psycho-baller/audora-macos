@@ -32,7 +32,7 @@ class LocalAudioManager: NSObject, ObservableObject {
     // ✅ NEW: Audio accumulators for batching
     private var micAccumulator: [Float] = []
     private var systemAccumulator: [Float] = []
-    private let chunkSize = 16000 // 1 second at 16kHz
+    private let chunkSize = 48000 // 1 second at 16kHz
     private var sequenceNumber = 0
 
     private var sessionID = UUID()
@@ -524,16 +524,32 @@ class LocalAudioManager: NSObject, ObservableObject {
         // ✅ Use detached task to avoid main actor blocking
         let task = Task.detached(priority: .userInitiated) { [weak self] in
             let options = STTOptions(language: "en")
+            
+            // Define the noise tokens Whisper commonly returns
+            let noiseTokens = ["[BLANK_AUDIO]", "[SILENCE]", "[NOISE]", "[MUSIC]", "[LAUGHTER]"]
+            
             print("🧠 [AI Loop] Started for \(source)")
             
             do {
                 guard let whisperKitService = await self?.whisperKitService else { return }
                 
                 for try await segment in whisperKitService.transcribeStream(audioStream: stream, options: options) {
-                    print("📥 [AI] \(source): \(segment.text)")
+                    let originalText = segment.text.trimmingCharacters(in: .whitespacesAndNewlines)
                     
-                    guard let self = self else { return }
-                    await self.handleTranscriptionSegment(segment, source: source)
+                    // ✅ Check if the text contains any noise tokens
+                    let isNoise = noiseTokens.contains { token in
+                        originalText.localizedCaseInsensitiveContains(token)
+                    }
+                    
+                    // Only proceed if it's not noise and not empty
+                    if !originalText.isEmpty && !isNoise {
+                        print("📥 [AI] \(source): \(originalText)")
+                        
+                        guard let self = self else { return }
+                        await self.handleTranscriptionSegment(segment, source: source)
+                    } else {
+                        print("🗑️ [AI] \(source) Ignored noise/empty: \(originalText)")
+                    }
                 }
                 print("🏁 [AI Loop] Ended for \(source)")
             } catch {

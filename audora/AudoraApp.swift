@@ -81,24 +81,37 @@ struct AudoraApp: App {
                 
                 // Register WhisperKit for voice features
                 await WhisperKitServiceProvider.register()
+
+                let largeModel = try ModelRegistration(
+                    url: "https://huggingface.co/argmaxinc/whisperkit-coreml/tree/main/openai_whisper-large-v3",
+                    framework: .whisperKit,
+                    id: "whisper-large",
+                    name: "Whisper Large",
+                    format: .mlmodel,
+                    memoryRequirement: 1_550_000_000
+                )
+
                 try await RunAnywhere.registerFrameworkAdapter(
                     WhisperKitAdapter.shared,
-                    models: [
-                        // Whisper Small (better accuracy than Base)
-                        try ModelRegistration(
-                            url: "https://huggingface.co/argmaxinc/whisperkit-coreml/tree/main/openai_whisper-small",
-                            framework: .whisperKit,
-                            id: "whisper-small",
-                            name: "Whisper Small",
-                            format: .mlmodel,
-                            memoryRequirement: 244_000_000
-                        ),
-                    ]
+                    models: [largeModel]
                 )
-                
-                // You cannot load the STT models, so the one that is downloaded should be used
+
+                // Only download if not already present
                 do {
-                    try await RunAnywhere.downloadModel("whisper-small")
+                    // Fetch current available models
+                    let models = try await RunAnywhere.availableModels()
+                    
+                    if let modelInfo = models.first(where: { $0.id == largeModel.id }) {
+                        if modelInfo.isDownloaded {
+                            print("✅ Model already downloaded: \(modelInfo.id)")
+                        } else {
+                            print("⬇️ Downloading model: \(modelInfo.id)")
+                            try await RunAnywhere.downloadModel(largeModel.id)
+                            print("✅ Download complete")
+                        }
+                    } else {
+                        print("❌ Model not found in available models")
+                    }
                 } catch {
                     print("Failed to download model: \(error)")
                 }
