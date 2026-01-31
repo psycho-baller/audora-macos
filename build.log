@@ -1,0 +1,646 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -scheme Audora -destination platform=macOS,arch=arm64 build
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  ConvexMobile: https://github.com/get-convex/convex-swift @ 0.7.0
+  Sparkle: https://github.com/sparkle-project/Sparkle.git @ 2.7.1
+  OpenAI: https://github.com/MacPaw/OpenAI @ 0.4.4
+  swift-openapi-runtime: https://github.com/apple/swift-openapi-runtime @ 1.8.2
+  swift-http-types: https://github.com/apple/swift-http-types @ 1.4.0
+  PostHog: https://github.com/PostHog/posthog-ios.git @ 3.28.2
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (15 targets)
+    Target 'audora' in project 'audora'
+        ➜ Explicit dependency on target 'PostHog' in project 'PostHog'
+        ➜ Explicit dependency on target 'OpenAI' in project 'OpenAI'
+        ➜ Explicit dependency on target 'Sparkle' in project 'Sparkle'
+        ➜ Explicit dependency on target 'ConvexMobile' in project 'ConvexMobile'
+    Target 'ConvexMobile' in project 'ConvexMobile'
+        ➜ Explicit dependency on target 'ConvexMobile' in project 'ConvexMobile'
+        ➜ Explicit dependency on target 'UniFFI' in project 'ConvexMobile'
+    Target 'ConvexMobile' in project 'ConvexMobile'
+        ➜ Explicit dependency on target 'UniFFI' in project 'ConvexMobile'
+    Target 'UniFFI' in project 'ConvexMobile' (no dependencies)
+    Target 'Sparkle' in project 'Sparkle' (no dependencies)
+    Target 'OpenAI' in project 'OpenAI'
+        ➜ Explicit dependency on target 'OpenAI' in project 'OpenAI'
+        ➜ Explicit dependency on target 'OpenAPIRuntime' in project 'swift-openapi-runtime'
+    Target 'OpenAI' in project 'OpenAI'
+        ➜ Explicit dependency on target 'OpenAPIRuntime' in project 'swift-openapi-runtime'
+    Target 'OpenAPIRuntime' in project 'swift-openapi-runtime'
+        ➜ Explicit dependency on target 'OpenAPIRuntime' in project 'swift-openapi-runtime'
+        ➜ Explicit dependency on target 'HTTPTypes' in project 'swift-http-types'
+    Target 'OpenAPIRuntime' in project 'swift-openapi-runtime'
+        ➜ Explicit dependency on target 'HTTPTypes' in project 'swift-http-types'
+    Target 'HTTPTypes' in project 'swift-http-types'
+        ➜ Explicit dependency on target 'HTTPTypes' in project 'swift-http-types'
+    Target 'HTTPTypes' in project 'swift-http-types' (no dependencies)
+    Target 'PostHog' in project 'PostHog'
+        ➜ Explicit dependency on target 'PostHog' in project 'PostHog'
+        ➜ Explicit dependency on target 'PostHog_PostHog' in project 'PostHog'
+        ➜ Explicit dependency on target 'phlibwebp' in project 'PostHog'
+    Target 'PostHog' in project 'PostHog'
+        ➜ Explicit dependency on target 'PostHog_PostHog' in project 'PostHog'
+        ➜ Explicit dependency on target 'phlibwebp' in project 'PostHog'
+    Target 'phlibwebp' in project 'PostHog' (no dependencies)
+    Target 'PostHog_PostHog' in project 'PostHog' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+ReadFileContents /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/share/docc/features.json
+
+Build description signature: 2a7fc625e4ec7f3c70c3070a21c70877
+Build description path: /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/XCBuildData/2a7fc625e4ec7f3c70c3070a21c70877.xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk /Users/rami/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx26.2-25C57-00fa09913b459cbbc988d1f6730289ae.sdkstatcache
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos/audora.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -o /Users/rami/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx26.2-25C57-00fa09913b459cbbc988d1f6730289ae.sdkstatcache
+
+ProcessInfoPlistFile /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PostHog_PostHog.bundle/Contents/Info.plist /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/PostHog.build/Debug/PostHog_PostHog.build/empty-PostHog_PostHog.plist (in target 'PostHog_PostHog' from project 'PostHog')
+    cd /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/SourcePackages/checkouts/posthog-ios
+    builtin-infoPlistUtility /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/PostHog.build/Debug/PostHog_PostHog.build/empty-PostHog_PostHog.plist -producttype com.apple.product-type.bundle -expandbuildsettings -platform macosx -o /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PostHog_PostHog.bundle/Contents/Info.plist
+
+SwiftDriver audora normal arm64 com.apple.xcode.tools.swift.compiler (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name audora -Onone -enforce-exclusivity\=checked @/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora.SwiftFileList -DDEBUG -Xcc -fmodule-map-file\=/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/GeneratedModuleMaps/phlibwebp.modulemap -D ENABLE_TCC_SPI -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-macos15.0 -g -module-cache-path /Users/rami/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug -emit-localized-strings -emit-localized-strings-path /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64 -c -j8 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/rami/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx26.2-25C57-00fa09913b459cbbc988d1f6730289ae.sdkstatcache -output-file-map /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/rami/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/rami/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/rami/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora_const_extract_protocols.json -Xcc -iquote -Xcc /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/audora-generated-files.hmap -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/audora-own-target-headers.hmap -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/audora-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora-211714fd7fff9384b1af639acc68b90f-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/audora-project-headers.hmap -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/SourcePackages/checkouts/posthog-ios/vendor/libwebp -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/include -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/DerivedSources-normal/arm64 -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/DerivedSources/arm64 -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora-Swift.h -working-directory /Users/rami/Documents/code/react-native/audora/apps/macos -experimental-emit-module-separately -disable-cmo
+
+ProcessInfoPlistFile /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app/Contents/Info.plist /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Info.plist (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    builtin-infoPlistUtility /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Info.plist -producttype com.apple.product-type.application -genpkginfo /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app/Contents/PkgInfo -expandbuildsettings -platform macosx -additionalcontentfile /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/assetcatalog_generated_info.plist -scanforprivacyfile /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app/Contents/Frameworks/Sparkle.framework -scanforprivacyfile /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app/Contents/Resources/PostHog_PostHog.bundle -o /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app/Contents/Info.plist
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ audora (in target 'audora' from project 'audora')
+
+EmitSwiftModule normal arm64 (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    
+
+SwiftCompile normal arm64 Compiling\ UserDefaultsManager.swift /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/UserDefaultsManager.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/UserDefaultsManager.swift (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    
+
+SwiftCompile normal arm64 Compiling\ ConvexService.swift /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Services/ConvexService.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Services/ConvexService.swift (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    
+
+SwiftCompile normal arm64 Compiling\ AudioManager.swift /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift (in target 'audora' from project 'audora')
+SwiftCompile normal arm64 /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:62:19: warning: call to main actor-isolated instance method 'handleAudioEngineConfigurationChange()' in a synchronous nonisolated context
+            self?.handleAudioEngineConfigurationChange()
+                  ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:1129:18: note: calls to instance method 'handleAudioEngineConfigurationChange()' from outside of its actor context are implicitly asynchronous
+    private func handleAudioEngineConfigurationChange() {
+                 ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:599:20: warning: capture of 'processBuffer' with non-Sendable type 'AVAudioPCMBuffer' in a '@Sendable' closure
+            return processBuffer
+                   ^
+/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk/System/Library/Frameworks/AVFAudio.framework/Headers/AVAudioBuffer.h:67:12: note: class 'AVAudioPCMBuffer' does not conform to the 'Sendable' protocol
+@interface AVAudioPCMBuffer : AVAudioBuffer
+           ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:4:1: warning: add '@preconcurrency' to suppress 'Sendable'-related warnings from module 'AVFAudio'
+import AVFoundation
+^
+@preconcurrency 
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:667:46: warning: main actor-isolated property 'micSocketTask' can not be referenced from a Sendable closure
+            let task = source == .mic ? self.micSocketTask : self.systemSocketTask
+                                             ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:23:17: note: property declared here
+    private var micSocketTask: URLSessionWebSocketTask?
+                ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:667:67: warning: main actor-isolated property 'systemSocketTask' can not be referenced from a Sendable closure
+            let task = source == .mic ? self.micSocketTask : self.systemSocketTask
+                                                                  ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:24:17: note: property declared here
+    private var systemSocketTask: URLSessionWebSocketTask?
+                ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:682:41: warning: main actor-isolated property 'isRecording' can not be referenced from a Sendable closure
+            guard let self = self, self.isRecording else { return }
+                                        ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:17:20: note: property declared here
+    @Published var isRecording = false
+                   ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:684:18: warning: call to main actor-isolated instance method 'connectToOpenAIRealtime(source:)' in a synchronous nonisolated context
+            self.connectToOpenAIRealtime(source: source)
+                 ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:617:18: note: calls to instance method 'connectToOpenAIRealtime(source:)' from outside of its actor context are implicitly asynchronous
+    private func connectToOpenAIRealtime(source: AudioSource) {
+                 ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:723:53: warning: main actor-isolated property 'sessionID' can not be referenced from a Sendable closure
+                        guard let self = self, self.sessionID == thisSession else { return }
+                                                    ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:29:17: note: property declared here
+    private var sessionID = UUID()
+                ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:764:27: warning: call to main actor-isolated instance method 'parseRealtimeEvent(_:source:)' in a synchronous nonisolated context
+                    self?.parseRealtimeEvent(text, source: source)
+                          ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:839:18: note: calls to instance method 'parseRealtimeEvent(_:source:)' from outside of its actor context are implicitly asynchronous
+    private func parseRealtimeEvent(_ text: String, source: AudioSource) {
+                 ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:771:42: warning: main actor-isolated property 'sessionID' can not be referenced from a Sendable closure
+                if let self = self, self.sessionID == sessionID {
+                                         ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:29:17: note: property declared here
+    private var sessionID = UUID()
+                ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:772:26: warning: call to main actor-isolated instance method 'receiveMessage(for:sessionID:)' in a synchronous nonisolated context
+                    self.receiveMessage(for: source, sessionID: sessionID)
+                         ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:757:18: note: calls to instance method 'receiveMessage(for:sessionID:)' from outside of its actor context are implicitly asynchronous
+    private func receiveMessage(for source: AudioSource, sessionID: UUID) {
+                 ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:775:45: warning: main actor-isolated property 'sessionID' can not be referenced from a Sendable closure
+                guard let self = self, self.sessionID == sessionID else { return } // Stale callback
+                                            ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:29:17: note: property declared here
+    private var sessionID = UUID()
+                ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:777:25: warning: main actor-isolated property 'isRecording' can not be referenced from a Sendable closure
+                if self.isRecording == false { return }
+                        ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:17:20: note: property declared here
+    @Published var isRecording = false
+                   ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:779:37: warning: call to main actor-isolated instance method 'handleWebSocketError(_:source:)' in a synchronous nonisolated context
+                let errorMsg = self.handleWebSocketError(error, source: source)
+                                    ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:813:18: note: calls to instance method 'handleWebSocketError(_:source:)' from outside of its actor context are implicitly asynchronous
+    private func handleWebSocketError(_ error: Error, source: AudioSource) -> String {
+                 ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:1112:53: warning: main actor-isolated property 'sessionID' can not be referenced from a Sendable closure
+                        guard let self = self, self.sessionID == thisSession else { return }
+                                                    ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/AudioManager.swift:29:17: note: property declared here
+    private var sessionID = UUID()
+                ^
+
+SwiftCompile normal arm64 Compiling\ Settings.swift /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Models/Settings.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Models/Settings.swift (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Models/Settings.swift:86:34: warning: 'init(contentsOfFile:)' was deprecated in macOS 15: Use `init(contentsOfFile:encoding:)` instead
+              let content = try? String(contentsOfFile: path) else {
+                                 ^
+
+SwiftDriverJobDiscovery normal arm64 Compiling Settings.swift (in target 'audora' from project 'audora')
+
+SwiftDriverJobDiscovery normal arm64 Compiling UserDefaultsManager.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 Compiling\ SettingsViewModel.swift /Users/rami/Documents/code/react-native/audora/apps/macos/audora/ViewModels/SettingsViewModel.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 /Users/rami/Documents/code/react-native/audora/apps/macos/audora/ViewModels/SettingsViewModel.swift (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/ViewModels/SettingsViewModel.swift:17:59: warning: 'authorized' was deprecated in macOS 14.0: Check for full access or write only access
+        if CalendarManager.shared.authorizationStatus == .authorized {
+                                                          ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/ViewModels/SettingsViewModel.swift:109:36: warning: result of call to 'deleteAllMeetings()' is unused
+        LocalStorageManager.shared.deleteAllMeetings()
+                                   ^                ~~
+
+SwiftCompile normal arm64 Compiling\ ContentView.swift /Users/rami/Documents/code/react-native/audora/apps/macos/audora/ContentView.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 /Users/rami/Documents/code/react-native/audora/apps/macos/audora/ContentView.swift (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    
+
+SwiftCompile normal arm64 Compiling\ SettingsView.swift /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Views/SettingsView.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Views/SettingsView.swift (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    
+
+SwiftCompile normal arm64 Compiling\ AudoraApp.swift /Users/rami/Documents/code/react-native/audora/apps/macos/audora/AudoraApp.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 /Users/rami/Documents/code/react-native/audora/apps/macos/audora/AudoraApp.swift (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/AudoraApp.swift:75:31: warning: string interpolation produces a debug description for an optional value; did you mean to make this explicit?
+                Text("Next: \(nextEvent.title)")
+                              ^~~~~~~~~~~~~~~
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/AudoraApp.swift:75:41: note: provide a default value to avoid this warning
+                Text("Next: \(nextEvent.title)")
+                              ~~~~~~~~~~^~~~~
+                                              ?? <#default value#>
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/AudoraApp.swift:75:41: note: use 'String(describing:)' to silence this warning
+                Text("Next: \(nextEvent.title)")
+                              ~~~~~~~~~~^~~~~
+                              String(describing:  )
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/AudoraApp.swift:75:30: warning: 'appendInterpolation' is deprecated: Localized string interpolation produces an unlocalized, debug description for this type of value. Use a type supported by LocalizedStringKey.StringInterpolation or initialize a LocalizedStringResource instead with an interpolated value that conforms to CustomLocalizedStringResourceConvertible.
+                Text("Next: \(nextEvent.title)")
+                             ^
+
+SwiftCompile normal arm64 Compiling\ MeetingViewModel.swift /Users/rami/Documents/code/react-native/audora/apps/macos/audora/ViewModels/MeetingViewModel.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 /Users/rami/Documents/code/react-native/audora/apps/macos/audora/ViewModels/MeetingViewModel.swift (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    
+
+SwiftCompile normal arm64 Compiling\ LocalStorageManager.swift /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/LocalStorageManager.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/LocalStorageManager.swift (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling ConvexService.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 Compiling\ AudioLevelWindow.swift /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Views/AudioLevelWindow.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Views/AudioLevelWindow.swift (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling SettingsViewModel.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 Compiling\ MeetingListViewModel.swift /Users/rami/Documents/code/react-native/audora/apps/macos/audora/ViewModels/MeetingListViewModel.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 /Users/rami/Documents/code/react-native/audora/apps/macos/audora/ViewModels/MeetingListViewModel.swift (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/ViewModels/MeetingListViewModel.swift:106:69: warning: string interpolation produces a debug description for an optional value; did you mean to make this explicit?
+            print("✅ Found existing meeting for calendar event: \(event.eventIdentifier)")
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/ViewModels/MeetingListViewModel.swift:106:75: note: provide a default value to avoid this warning
+            print("✅ Found existing meeting for calendar event: \(event.eventIdentifier)")
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/ViewModels/MeetingListViewModel.swift:106:75: note: use 'String(describing:)' to silence this warning
+            print("✅ Found existing meeting for calendar event: \(event.eventIdentifier)")
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/ViewModels/MeetingListViewModel.swift:113:80: warning: string interpolation produces a debug description for an optional value; did you mean to make this explicit?
+            print("✅ Found existing meeting in storage for calendar event: \(event.eventIdentifier)")
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/ViewModels/MeetingListViewModel.swift:113:86: note: provide a default value to avoid this warning
+            print("✅ Found existing meeting in storage for calendar event: \(event.eventIdentifier)")
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/ViewModels/MeetingListViewModel.swift:113:86: note: use 'String(describing:)' to silence this warning
+            print("✅ Found existing meeting in storage for calendar event: \(event.eventIdentifier)")
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/ViewModels/MeetingListViewModel.swift:171:13: warning: variable 'newMeeting' was never mutated; consider changing to 'let' constant
+        var newMeeting = Meeting(title: "Recording - \(formattedDate)")
+        ~~~ ^
+        let
+
+SwiftDriverJobDiscovery normal arm64 Compiling AudoraApp.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 Compiling\ OnboardingView.swift /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Views/OnboardingView.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Views/OnboardingView.swift (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Views/OnboardingView.swift:194:84: warning: 'authorized' was deprecated in macOS 14.0: Check for full access or write only access
+        calendarPermissionGranted = CalendarManager.shared.authorizationStatus == .authorized
+                                                                                   ^
+
+SwiftDriverJobDiscovery normal arm64 Compiling ContentView.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 Compiling\ NotificationManager.swift /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/NotificationManager.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/NotificationManager.swift (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling MeetingViewModel.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 Compiling\ MeetingListView.swift /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Views/MeetingListView.swift (in target 'audora' from project 'audora')
+SwiftCompile normal arm64 /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Views/MeetingListView.swift (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling LocalStorageManager.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 Compiling\ NotesGenerator.swift /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Services/NotesGenerator.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Services/NotesGenerator.swift (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for audora (in target 'audora' from project 'audora')
+
+SwiftDriver\ Compilation\ Requirements audora normal arm64 com.apple.xcode.tools.swift.compiler (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name audora -Onone -enforce-exclusivity\=checked @/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora.SwiftFileList -DDEBUG -Xcc -fmodule-map-file\=/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/GeneratedModuleMaps/phlibwebp.modulemap -D ENABLE_TCC_SPI -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-macos15.0 -g -module-cache-path /Users/rami/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug -emit-localized-strings -emit-localized-strings-path /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64 -c -j8 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/rami/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx26.2-25C57-00fa09913b459cbbc988d1f6730289ae.sdkstatcache -output-file-map /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/rami/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/rami/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/rami/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora_const_extract_protocols.json -Xcc -iquote -Xcc /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/audora-generated-files.hmap -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/audora-own-target-headers.hmap -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/audora-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora-211714fd7fff9384b1af639acc68b90f-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/audora-project-headers.hmap -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/SourcePackages/checkouts/posthog-ios/vendor/libwebp -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/include -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/DerivedSources-normal/arm64 -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/DerivedSources/arm64 -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora-Swift.h -working-directory /Users/rami/Documents/code/react-native/audora/apps/macos -experimental-emit-module-separately -disable-cmo
+
+SwiftDriverJobDiscovery normal arm64 Compiling NotificationManager.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 Compiling\ MeetingAppDetector.swift /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/MeetingAppDetector.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/MeetingAppDetector.swift (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    
+
+Copy /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.swiftmodule/arm64-apple-macos.swiftmodule /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora.swiftmodule (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora.swiftmodule /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.swiftmodule/arm64-apple-macos.swiftmodule
+
+SwiftDriverJobDiscovery normal arm64 Compiling AudioLevelWindow.swift (in target 'audora' from project 'audora')
+
+Copy /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.swiftmodule/arm64-apple-macos.swiftdoc /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora.swiftdoc (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora.swiftdoc /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.swiftmodule/arm64-apple-macos.swiftdoc
+
+Copy /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.swiftmodule/arm64-apple-macos.abi.json /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora.abi.json (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora.abi.json /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.swiftmodule/arm64-apple-macos.abi.json
+
+Copy /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.swiftmodule/Project/arm64-apple-macos.swiftsourceinfo /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora.swiftsourceinfo (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora.swiftsourceinfo /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.swiftmodule/Project/arm64-apple-macos.swiftsourceinfo
+
+SwiftCompile normal arm64 Compiling\ CalendarManager.swift /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/CalendarManager.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/CalendarManager.swift (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/CalendarManager.swift:22:20: warning: 'requestAccess(to:completion:)' was deprecated in macOS 14.0: Use -requestFullAccessToEventsWithCompletion:, -requestWriteOnlyAccessToEventsWithCompletion:, or -requestFullAccessToRemindersWithCompletion:
+        eventStore.requestAccess(to: .event) { [weak self] granted, error in
+                   ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/CalendarManager.swift:34:39: warning: 'authorized' was deprecated in macOS 14.0: Check for full access or write only access
+        guard authorizationStatus == .authorized else { return }
+                                      ^
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/CalendarManager.swift:44:39: warning: 'authorized' was deprecated in macOS 14.0: Check for full access or write only access
+        guard authorizationStatus == .authorized else { return }
+                                      ^
+
+SwiftDriverJobDiscovery normal arm64 Compiling MeetingListViewModel.swift (in target 'audora' from project 'audora')
+
+SwiftDriverJobDiscovery normal arm64 Compiling NotesGenerator.swift (in target 'audora' from project 'audora')
+
+SwiftDriverJobDiscovery normal arm64 Compiling MeetingAppDetector.swift (in target 'audora' from project 'audora')
+
+SwiftDriverJobDiscovery normal arm64 Compiling SettingsView.swift (in target 'audora' from project 'audora')
+
+SwiftDriverJobDiscovery normal arm64 Compiling CalendarManager.swift (in target 'audora' from project 'audora')
+
+SwiftDriverJobDiscovery normal arm64 Compiling OnboardingView.swift (in target 'audora' from project 'audora')
+
+SwiftDriverJobDiscovery normal arm64 Compiling AudioManager.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 Compiling\ RecordingSessionManager.swift /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/RecordingSessionManager.swift (in target 'audora' from project 'audora')
+
+SwiftCompile normal arm64 /Users/rami/Documents/code/react-native/audora/apps/macos/audora/Managers/RecordingSessionManager.swift (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling RecordingSessionManager.swift (in target 'audora' from project 'audora')
+
+SwiftDriverJobDiscovery normal arm64 Compiling MeetingListView.swift (in target 'audora' from project 'audora')
+
+SwiftDriver\ Compilation audora normal arm64 com.apple.xcode.tools.swift.compiler (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name audora -Onone -enforce-exclusivity\=checked @/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora.SwiftFileList -DDEBUG -Xcc -fmodule-map-file\=/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/GeneratedModuleMaps/phlibwebp.modulemap -D ENABLE_TCC_SPI -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -target arm64-apple-macos15.0 -g -module-cache-path /Users/rami/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug -emit-localized-strings -emit-localized-strings-path /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64 -c -j8 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/rami/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/macosx26.2-25C57-00fa09913b459cbbc988d1f6730289ae.sdkstatcache -output-file-map /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/rami/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/rami/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/rami/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora_const_extract_protocols.json -Xcc -iquote -Xcc /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/audora-generated-files.hmap -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/audora-own-target-headers.hmap -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/audora-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora-211714fd7fff9384b1af639acc68b90f-VFS/all-product-headers.yaml -Xcc -iquote -Xcc /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/audora-project-headers.hmap -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/SourcePackages/checkouts/posthog-ios/vendor/libwebp -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/include -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/DerivedSources-normal/arm64 -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/DerivedSources/arm64 -Xcc -I/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora-Swift.h -working-directory /Users/rami/Documents/code/react-native/audora/apps/macos -experimental-emit-module-separately -disable-cmo
+
+Ld /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app/Contents/MacOS/audora.debug.dylib normal (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-macos15.0 -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -O0 -L/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/EagerLinkingTBDs/Debug -L/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug -F/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/EagerLinkingTBDs/Debug -F/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug -filelist /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora.LinkFileList -install_name @rpath/audora.debug.dylib -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -rpath -Xlinker /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -Xlinker -rpath -Xlinker @executable_path/../Frameworks -Xlinker -object_path_lto -Xlinker /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -dependency_info -Xlinker /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora.swiftmodule @/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora-linker-args.resp -Wl,-no_warn_duplicate_libraries -Wl,-no_warn_duplicate_libraries -Wl,-no_warn_duplicate_libraries -Wl,-no_warn_duplicate_libraries -Wl,-no_warn_duplicate_libraries -Wl,-no_warn_duplicate_libraries -Wl,-no_warn_duplicate_libraries -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -framework Sparkle -lconvexmobile -Xlinker -no_adhoc_codesign -o /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app/Contents/MacOS/audora.debug.dylib -Xlinker -add_ast_path -Xlinker /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/PostHog.build/Debug/PostHog.build/Objects-normal/arm64/PostHog.swiftmodule @/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/PostHog.build/Debug/PostHog.build/Objects-normal/arm64/PostHog-linker-args.resp -Xlinker -add_ast_path -Xlinker /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/OpenAI.build/Debug/OpenAI.build/Objects-normal/arm64/OpenAI.swiftmodule @/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/OpenAI.build/Debug/OpenAI.build/Objects-normal/arm64/OpenAI-linker-args.resp -Xlinker -add_ast_path -Xlinker /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/swift-openapi-runtime.build/Debug/OpenAPIRuntime.build/Objects-normal/arm64/OpenAPIRuntime.swiftmodule @/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/swift-openapi-runtime.build/Debug/OpenAPIRuntime.build/Objects-normal/arm64/OpenAPIRuntime-linker-args.resp -Xlinker -add_ast_path -Xlinker /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/swift-http-types.build/Debug/HTTPTypes.build/Objects-normal/arm64/HTTPTypes.swiftmodule @/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/swift-http-types.build/Debug/HTTPTypes.build/Objects-normal/arm64/HTTPTypes-linker-args.resp -Xlinker -add_ast_path -Xlinker /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/ConvexMobile.build/Debug/ConvexMobile.build/Objects-normal/arm64/ConvexMobile.swiftmodule @/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/ConvexMobile.build/Debug/ConvexMobile.build/Objects-normal/arm64/ConvexMobile-linker-args.resp -Xlinker -add_ast_path -Xlinker /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/ConvexMobile.build/Debug/UniFFI.build/Objects-normal/arm64/UniFFI.swiftmodule @/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/ConvexMobile.build/Debug/UniFFI.build/Objects-normal/arm64/UniFFI-linker-args.resp
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[412](a_object.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[431](posix_time.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[433](bio.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[440](file.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[444](printf.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[447](blake2.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[448](bn_asn1.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[449](convert.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[451](asn1_compat.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[453](cbb.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[454](cbs.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[456](chacha.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[460](e_aesgcmsiv.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[461](e_chacha20poly1305.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[471](console.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[472](crypto.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[474](params.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[475](dh_asn1.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[476](digest_extra.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[477](dsa.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[478](dsa_asn1.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[480](ecdsa_asn1.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[481](ec_asn1.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[484](err.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[485](err_data.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[486](engine.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[487](evp_asn1.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[488](p_dh.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[489](p_dh_asn1.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[490](p_dsa.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[491](p_dsa_asn1.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[492](p_ec_asn1.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[493](p_ed25519_asn1.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[494](p_hmac_asn1.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[495](p_kem_asn1.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[496](p_pqdsa_asn1.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[497](p_rsa_asn1.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[498](p_x25519.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[499](p_x25519_asn1.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[500](p_methods.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[501](print.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[504](ex_data.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[507](kyber512r3_ref.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[508](kyber768r3_ref.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[509](kyber1024r3_ref.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[510](fips202.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[511](kem_kyber.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[512](lhash.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[513](mem.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[514](obj.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[515](obj_xref.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[539](poly1305.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[545](getentropy.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[547](snapsafe_fallback.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[551](refcount_c11.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[554](rsa_asn1.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[555](rsassa_pss_asn1.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[556](rsa_crypt.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[558](stack.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[563](thread_pthread.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[568](ube.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[569](fork_detect.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[570](snapsafe_detect.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[645](cfb.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[649](ripemd.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[652](chacha-armv8.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[654](chacha20_poly1305_armv8.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[655](bcm.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[657](cpucap.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[658](aesv8-armx.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[659](aesv8-gcm-armv8.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[660](aesv8-gcm-armv8-unroll8.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[661](armv8-mont.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[662](bn-armv8.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[663](ghash-neon-armv8.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[664](ghashv8-armx.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[665](keccak1600-armv8.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[666](md5-armv8.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[667](p256-armv8-asm.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[668](p256_beeu-armv8-asm.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[669](rndr-armv8.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[670](sha1-armv8.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[671](sha256-armv8.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[672](sha512-armv8.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[673](vpaes-armv8.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[674](p256_montjscalarmul.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[675](p256_montjscalarmul_alt.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[676](bignum_montinv_p256.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[677](bignum_add_p384.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[678](bignum_sub_p384.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[679](bignum_neg_p384.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[680](bignum_tomont_p384.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[681](bignum_deamont_p384.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[682](bignum_montmul_p384.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[683](bignum_montmul_p384_alt.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[684](bignum_montsqr_p384.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[685](bignum_montsqr_p384_alt.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[686](bignum_nonzero_6.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[687](bignum_littleendian_6.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[688](p384_montjdouble.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[689](p384_montjdouble_alt.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[690](p384_montjscalarmul.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[691](p384_montjscalarmul_alt.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[692](bignum_montinv_p384.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[693](bignum_add_p521.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[694](bignum_sub_p521.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[695](bignum_neg_p521.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[696](bignum_mul_p521.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[697](bignum_mul_p521_alt.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[698](bignum_sqr_p521.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[699](bignum_sqr_p521_alt.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[700](bignum_tolebytes_p521.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[701](bignum_fromlebytes_p521.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[702](p521_jdouble.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[703](p521_jdouble_alt.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[704](p521_jscalarmul.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[705](p521_jscalarmul_alt.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[706](bignum_inv_p521.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[707](bignum_mod_n25519.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[708](bignum_neg_p25519.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[709](bignum_madd_n25519.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[710](bignum_madd_n25519_alt.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[711](edwards25519_decode.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[712](edwards25519_decode_alt.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[713](edwards25519_encode.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[714](edwards25519_scalarmulbase.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[715](edwards25519_scalarmulbase_alt.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[716](edwards25519_scalarmuldouble.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[717](edwards25519_scalarmuldouble_alt.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[718](curve25519_x25519_byte.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[719](curve25519_x25519_byte_alt.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[720](curve25519_x25519base_byte.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[721](curve25519_x25519base_byte_alt.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[722](bignum_kmul_16_32.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[723](bignum_kmul_32_64.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[724](bignum_ksqr_16_32.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[725](bignum_ksqr_32_64.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[726](bignum_emontredc_8n.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[727](bignum_ge.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[728](bignum_mul.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[729](bignum_optsub.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[730](bignum_sqr.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[731](bignum_copy_row_from_table.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[732](bignum_copy_row_from_table_8n.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[733](bignum_copy_row_from_table_16.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[734](bignum_copy_row_from_table_32.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[735](sha3_keccak_f1600.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[736](sha3_keccak4_f1600_alt.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[737](sha3_keccak_f1600_alt.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[738](sha3_keccak2_f1600.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[739](sha3_keccak4_f1600_alt2.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[740](aes-xts-enc.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[741](aes-xts-dec.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[742](intt.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[743](ntt.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[744](poly_mulcache_compute_asm.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[745](poly_reduce_asm.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[746](poly_tobytes_asm.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[747](poly_tomont_asm.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[748](polyvec_basemul_acc_montgomery_cached_asm_k2.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[749](polyvec_basemul_acc_montgomery_cached_asm_k3.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[750](polyvec_basemul_acc_montgomery_cached_asm_k4.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[751](rej_uniform_asm.S.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[752](jitterentropy-base.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[753](jitterentropy-gcd.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[754](jitterentropy-health.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[755](jitterentropy-noise.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+ld: warning: object file (/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/libconvexmobile.a[756](jitterentropy-sha3.c.o)) was built for newer 'macOS' version (26.1) than being linked (15.0)
+
+ConstructStubExecutorLinkFileList /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/audora-ExecutorLinkFileList-normal-arm64.txt (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    construct-stub-executor-link-file-list /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app/Contents/MacOS/audora.debug.dylib /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/audora-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'audora' from project 'audora')
+
+Ld /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app/Contents/MacOS/audora normal (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-macos15.0 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk -O0 -L/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug -F/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -F/Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/PackageFrameworks -Xlinker -rpath -Xlinker @executable_path/../Frameworks -rdynamic -Xlinker -no_deduplicate -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/audora-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/audora-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/audora-ExecutorLinkFileList-normal-arm64.txt /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app/Contents/MacOS/audora.debug.dylib -Xlinker -no_adhoc_codesign -o /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app/Contents/MacOS/audora
+
+CopySwiftLibs /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    builtin-swiftStdLibTool --copy --verbose --sign 935BEFBC0AEC78206F2D9F3CEB52CBD0D0A44715 --scan-executable /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app/Contents/MacOS/audora.debug.dylib --scan-folder /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app/Contents/Frameworks --scan-folder /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app/Contents/PlugIns --scan-folder /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app/Contents/Library/SystemExtensions --scan-folder /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app/Contents/Extensions --platform macosx --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app/Contents/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os --back-deploy-swift-span
+
+ExtractAppIntentsMetadata (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --module-name audora --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk --xcode-version 17C52 --platform-family macOS --deployment-target 15.0 --bundle-identifier rami.audora --output /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app/Contents/Resources --target-triple arm64-apple-macos15.0 --binary-file /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app/Contents/MacOS/audora --dependency-file /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora_dependency_info.dat --stringsdata-file /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora.SwiftFileList --metadata-file-list /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/audora.DependencyMetadataFileList --static-metadata-file-list /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/audora.DependencyStaticMetadataFileList --swift-const-vals-list /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/Objects-normal/arm64/audora.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-01-10 00:36:13.255 appintentsmetadataprocessor[27239:21664361] Starting appintentsmetadataprocessor export
+2026-01-10 00:36:13.257 appintentsmetadataprocessor[27239:21664361] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+CodeSign /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app/Contents/MacOS/audora.debug.dylib (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    
+    Signing Identity:     "Apple Development: Rami Maalouf (VZ78M59QF9)"
+    Provisioning Profile: "Mac Team Provisioning Profile: *"
+                          (f3d7da27-5b25-478a-adea-503e52fd0fac)
+    
+    /usr/bin/codesign --force --sign 935BEFBC0AEC78206F2D9F3CEB52CBD0D0A44715 -o runtime --timestamp\=none --generate-entitlement-der /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app/Contents/MacOS/audora.debug.dylib
+
+CodeSign /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app/Contents/MacOS/__preview.dylib (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    
+    Signing Identity:     "Apple Development: Rami Maalouf (VZ78M59QF9)"
+    Provisioning Profile: "Mac Team Provisioning Profile: *"
+                          (f3d7da27-5b25-478a-adea-503e52fd0fac)
+    
+    /usr/bin/codesign --force --sign 935BEFBC0AEC78206F2D9F3CEB52CBD0D0A44715 -o runtime --timestamp\=none --generate-entitlement-der /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app/Contents/MacOS/__preview.dylib
+
+CodeSign /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    
+    Signing Identity:     "Apple Development: Rami Maalouf (VZ78M59QF9)"
+    Provisioning Profile: "Mac Team Provisioning Profile: *"
+                          (f3d7da27-5b25-478a-adea-503e52fd0fac)
+    
+    /usr/bin/codesign --force --sign 935BEFBC0AEC78206F2D9F3CEB52CBD0D0A44715 -o runtime --entitlements /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Intermediates.noindex/audora.build/Debug/audora.build/audora.app.xcent --timestamp\=none --generate-entitlement-der /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app
+
+Validate /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    builtin-validationUtility /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app -no-validate-extension -infoplist-subpath Contents/Info.plist
+
+RegisterWithLaunchServices /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app (in target 'audora' from project 'audora')
+    cd /Users/rami/Documents/code/react-native/audora/apps/macos
+    /System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister -f -R -trusted /Users/rami/Library/Developer/Xcode/DerivedData/audora-fpzxftqrmrltcgczyinsodpwxcne/Build/Products/Debug/audora.app
+
+/Users/rami/Documents/code/react-native/audora/apps/macos/audora.xcodeproj: warning: The Copy Bundle Resources build phase contains this target's Info.plist file '/Users/rami/Documents/code/react-native/audora/apps/macos/audora/Info.plist'. (in target 'audora' from project 'audora')
+** BUILD SUCCEEDED ** [4.937 sec]
+

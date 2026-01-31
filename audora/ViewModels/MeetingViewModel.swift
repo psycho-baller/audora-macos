@@ -7,6 +7,10 @@ import PostHog
 extension Notification.Name {
     static let meetingSaved = Notification.Name("MeetingSaved")
     static let meetingDeleted = Notification.Name("MeetingDeleted")
+    static let createNewRecording = Notification.Name("CreateNewRecording")
+    static let openSettings = Notification.Name("OpenSettings")
+    static let onboardingReset = Notification.Name("OnboardingReset")
+    static let meetingsDeleted = Notification.Name("com.audora.notification.meetingsDeleted")
 }
 
 enum MeetingViewTab: String, CaseIterable {
@@ -65,6 +69,11 @@ class MeetingViewModel: ObservableObject {
         // Load the latest version of the meeting from storage if it exists
         if let savedMeeting = LocalStorageManager.shared.loadMeetings().first(where: { $0.id == meeting.id }) {
             print("🔄 Loading latest version of meeting: \(meeting.id)")
+            print("   audioFileURL: \(savedMeeting.audioFileURL ?? "nil")")
+            if let audioPath = savedMeeting.audioFileURL {
+                let fileExists = FileManager.default.fileExists(atPath: audioPath)
+                print("   File exists: \(fileExists)")
+            }
             self.meeting = savedMeeting
         } else {
             print("🆕 Using provided meeting: \(meeting.id)")
@@ -146,9 +155,32 @@ class MeetingViewModel: ObservableObject {
                 }
             }
             .store(in: &cancellables)
-        
-        
-        
+
+        // Listen for meeting saved notifications to update audioFileURL (e.g., when recording stops)
+        NotificationCenter.default.publisher(for: .meetingSaved)
+            .compactMap { $0.object as? Meeting }
+            .filter { [weak self] savedMeeting in
+                // Only process if it's for this meeting
+                savedMeeting.id == self?.meeting.id
+            }
+            .sink { [weak self] savedMeeting in
+                guard let self = self else { return }
+                // Update audioFileURL if it was added/updated
+                if savedMeeting.audioFileURL != self.meeting.audioFileURL {
+                    print("🔄 Updating audioFileURL in MeetingViewModel")
+                    print("   Old: \(self.meeting.audioFileURL ?? "nil")")
+                    print("   New: \(savedMeeting.audioFileURL ?? "nil")")
+
+                    if let newPath = savedMeeting.audioFileURL {
+                        let fileExists = FileManager.default.fileExists(atPath: newPath)
+                        print("   File exists: \(fileExists)")
+                    }
+
+                    self.meeting.audioFileURL = savedMeeting.audioFileURL
+                }
+            }
+            .store(in: &cancellables)
+
         // Auto-save when meeting properties change
         $meeting
             .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
@@ -187,62 +219,50 @@ class MeetingViewModel: ObservableObject {
         let modelSource = UserDefaultsManager.shared.modelSource
         print("🎯 Starting recording with model: \(modelSource.rawValue)")
         
-        // For local model, skip API key validation
+        // If using local model, skip authentication check
         if modelSource == .local {
             isStartingRecording = true
             recordingSessionManager.startRecording(for: meeting.id)
             return
         }
         
-        // For OpenAI model, validate API key first
-        isValidatingKey = true
-        isStartingRecording = true
-        
-        Task {
-            let validationResult = await APIKeyValidator.shared.validateCurrentAPIKey()
-            defer { isValidatingKey = false }
-            
-            switch validationResult {
-            case .success():
-                // Key is valid, proceed with recording
-                recordingSessionManager.startRecording(for: meeting.id)
-            case .failure(let error):
-                // Show error message
-                errorMessage = error.localizedDescription
-                // Cancel starting if validation failed
-                isStartingRecording = false
-                print("❌ API key validation failed: \(error.localizedDescription)")
-            }
+        // Check authentication before starting recording
+        guard case .authenticated = ConvexService.shared.authState else {
+            errorMessage = "Please sign in to start recording."
+            return
         }
+
+        isStartingRecording = true
+        recordingSessionManager.startRecording(for: meeting.id)
     }
 
     func stopRecording() {
         recordingSessionManager.stopRecording()
-        
+
         // Calculate analytics after stopping recording
         calculateAnalytics()
-        
+
         saveMeeting()
     }
-    
+
     /// Calculate speech analytics from transcript chunks
     private func calculateAnalytics() {
         guard !meeting.transcriptChunks.isEmpty else {
             print("⚠️ No transcript chunks to analyze")
             return
         }
-        
+
         // Calculate duration in minutes
         let chunks = meeting.transcriptChunks
         guard let firstChunk = chunks.first, let lastChunk = chunks.last else {
             return
         }
-        
+
         let durationSeconds = lastChunk.timestamp.timeIntervalSince(firstChunk.timestamp)
         let durationMinutes = max(durationSeconds / 60.0, 0.1) // Minimum 0.1 minutes
-        
+
         print("📊 Calculating analytics for \(chunks.count) chunks, duration: \(String(format: "%.1f", durationMinutes)) min")
-        
+
         // Calculate analytics
         if let analytics = AnalyticsCalculator.analyzeTranscript(
             chunks: chunks,
@@ -253,7 +273,7 @@ class MeetingViewModel: ObservableObject {
             print("   Clarity: \(analytics.scores.clarity)")
             print("   Conciseness: \(analytics.scores.conciseness)")
             print("   Confidence: \(analytics.scores.confidence)")
-            
+
             // Switch to analytics tab to show results
             selectedTab = .analytics
         } else {
@@ -278,7 +298,39 @@ class MeetingViewModel: ObservableObject {
         
         // Clear existing notes for streaming
         meeting.generatedNotes = ""
-        
+
+        // Upload audio file to Convex if available
+        if let audioFileURLString = meeting.audioFileURL {
+            let audioFileURL = URL(fileURLWithPath: audioFileURLString)
+
+            // Check if file exists
+            if FileManager.default.fileExists(atPath: audioFileURL.path) {
+                do {
+                    print("📤 Uploading audio file to Convex before generating notes...")
+                    let storageId = try await ConvexService.shared.uploadAudioFile(
+                        audioFileURL: audioFileURL,
+                        meetingId: meeting.id
+                    )
+
+                    if let storageId = storageId {
+                        print("✅ Audio file uploaded to Convex. Storage ID: \(storageId)")
+                        // TODO: Store storageId in meeting when database schema is updated
+                        // For now, we just log it
+                    } else {
+                        print("⚠️ Audio file uploaded but no storage ID returned")
+                    }
+                } catch {
+                    // Log error but don't block note generation if upload fails
+                    print("⚠️ Failed to upload audio file to Convex: \(error.localizedDescription)")
+                    // Continue with note generation even if upload fails
+                }
+            } else {
+                print("⚠️ Audio file path exists but file not found: \(audioFileURLString)")
+            }
+        } else {
+            print("ℹ️ No audio file available for this meeting, skipping upload")
+        }
+
         // Load settings for generation
         let userBlurb = UserDefaultsManager.shared.userBlurb
         let systemPrompt = UserDefaultsManager.shared.systemPrompt

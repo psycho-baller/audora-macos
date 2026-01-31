@@ -62,6 +62,60 @@
       "state" : {
         "revision" : "427f3b8957a40982500abc8d35ccff8b83ec56a4",
         "version" : "2.1.0"
+  "originHash" : "6f27f5866f966a30f6558a24af46fed8e2d7c57d93b813ff19d3dded7f5221c8",
+  "pins" : [
+    {
+      "identity" : "clerk-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/clerk/clerk-ios",
+      "state" : {
+        "revision" : "8d16727fbe58609e18759e3020488b840201c83d",
+        "version" : "0.71.4"
+      }
+    },
+    {
+      "identity" : "convex-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/get-convex/convex-swift",
+      "state" : {
+        "revision" : "6a87b8a74bf8c9d36f205558bf6eff90fbd36673",
+        "version" : "0.7.0"
+      }
+    },
+    {
+      "identity" : "convex-swift-clerk",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/mellobirkan/convex-swift-clerk",
+      "state" : {
+        "branch" : "main",
+        "revision" : "2462d5fcad8ac6362febe5abc47a47366e5b5663"
+      }
+    },
+    {
+      "identity" : "factory",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/hmlongco/Factory",
+      "state" : {
+        "revision" : "ccc898f21992ebc130bc04cc197460a5ae230bcf",
+        "version" : "2.5.3"
+      }
+    },
+    {
+      "identity" : "get",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/kean/Get",
+      "state" : {
+        "revision" : "31249885da1052872e0ac91a2943f62567c0d96d",
+        "version" : "2.2.1"
+      }
+    },
+    {
+      "identity" : "kingfisher",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/onevcat/Kingfisher.git",
+      "state" : {
+        "revision" : "d30a5fad881137e2267f96a8e3fc35c58999bb94",
+        "version" : "8.6.2"
       }
     },
     {
@@ -71,6 +125,15 @@
       "state" : {
         "revision" : "cedec2fc80aedafa332f7395b7004f79f547c794",
         "version" : "0.4.4"
+      }
+    },
+    {
+      "identity" : "phonenumberkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/marmelroy/PhoneNumberKit",
+      "state" : {
+        "revision" : "16bb5d46b82540280c5aab8976a94d8a9cda8135",
+        "version" : "4.2.2"
       }
     },
     {
@@ -89,6 +152,12 @@
       "state" : {
         "revision" : "3ac5ee35ab233e900aa484919803d51791d1e351",
         "version" : "4.2.7"
+      "identity" : "simplekeychain",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/auth0/SimpleKeychain",
+      "state" : {
+        "revision" : "776c4a6db74d5c6c143974be91c383680d468630",
+        "version" : "1.3.0"
       }
     },
     {

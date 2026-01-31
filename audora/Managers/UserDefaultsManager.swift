@@ -6,11 +6,11 @@ import Foundation
 /// Manages non-sensitive app settings using UserDefaults
 class UserDefaultsManager {
     static let shared = UserDefaultsManager()
-    
+
     private let userDefaults = UserDefaults.standard
-    
+
     private init() {}
-    
+
     // MARK: - Keys
     private enum Keys {
         static let userBlurb = "userBlurb"
@@ -22,42 +22,54 @@ class UserDefaultsManager {
         static let micFollowingEnabled = "micFollowingEnabled"
         static let modelSource = "modelSource"
         static let loadedModel = "loadedModel"
+        static let meetingReminderEnabled = "meetingReminderEnabled"
+        static let ignoredAppBundleIDs = "ignoredAppBundleIDs"
+        static let calendarIntegrationEnabled = "calendarIntegrationEnabled"
+        static let selectedCalendarIDs = "selectedCalendarIDs"
+
+        // New Settings Keys
+        static let showUpcomingInMenuBar = "showUpcomingInMenuBar"
+        static let showEventsWithNoParticipants = "showEventsWithNoParticipants"
+        static let showLiveMeetingIndicator = "showLiveMeetingIndicator"
+        static let launchAtLogin = "launchAtLogin"
+        static let notifyScheduledMeetings = "notifyScheduledMeetings"
+        static let realtimeFeedbackEnabled = "realtimeFeedbackEnabled"
     }
-    
+
     // MARK: - User Blurb
     var userBlurb: String {
         get { userDefaults.string(forKey: Keys.userBlurb) ?? "" }
         set { userDefaults.set(newValue, forKey: Keys.userBlurb) }
     }
-    
+
     // MARK: - System Prompt
     var systemPrompt: String {
-        get { 
+        get {
             let stored = userDefaults.string(forKey: Keys.systemPrompt)
             return stored?.isEmpty == false ? stored! : Settings.defaultSystemPrompt()
         }
         set { userDefaults.set(newValue, forKey: Keys.systemPrompt) }
     }
-    
+
     // MARK: - Onboarding Status
     var hasCompletedOnboarding: Bool {
         get { userDefaults.bool(forKey: Keys.hasCompletedOnboarding) }
         set { userDefaults.set(newValue, forKey: Keys.hasCompletedOnboarding) }
     }
-    
+
     // MARK: - Terms Acceptance
     var hasAcceptedTerms: Bool {
         get { userDefaults.bool(forKey: Keys.hasAcceptedTerms) }
         set { userDefaults.set(newValue, forKey: Keys.hasAcceptedTerms) }
     }
-    
+
     // MARK: - Selected Template ID
     var selectedTemplateId: UUID? {
-        get { 
+        get {
             guard let uuidString = userDefaults.string(forKey: Keys.selectedTemplateId) else { return nil }
             return UUID(uuidString: uuidString)
         }
-        set { 
+        set {
             if let uuid = newValue {
                 userDefaults.set(uuid.uuidString, forKey: Keys.selectedTemplateId)
             } else {
@@ -65,19 +77,26 @@ class UserDefaultsManager {
             }
         }
     }
-    
-    // MARK: - Auto-Recording
-    var autoRecordingEnabled: Bool {
-        get { userDefaults.bool(forKey: Keys.autoRecordingEnabled) }
-        set { userDefaults.set(newValue, forKey: Keys.autoRecordingEnabled) }
+
+    // MARK: - Meeting Reminders
+    var meetingReminderEnabled: Bool {
+        get { userDefaults.object(forKey: Keys.meetingReminderEnabled) as? Bool ?? true } // Default to true
+        set { userDefaults.set(newValue, forKey: Keys.meetingReminderEnabled) }
+    }
+
+    var ignoredAppBundleIDs: Set<String> {
+        get {
+            if let array = userDefaults.array(forKey: Keys.ignoredAppBundleIDs) as? [String] {
+                return Set(array)
+            }
+            return []
+        }
+        set {
+            userDefaults.set(Array(newValue), forKey: Keys.ignoredAppBundleIDs)
+        }
     }
     
-    // MARK: - Mic Following
-    var micFollowingEnabled: Bool {
-        get { userDefaults.bool(forKey: Keys.micFollowingEnabled) }
-        set { userDefaults.set(newValue, forKey: Keys.micFollowingEnabled) }
-    }
-    
+    // MARK: - Model Settings
     var modelSource: ModelSource {
         get {
             guard
@@ -102,5 +121,54 @@ class UserDefaultsManager {
                 userDefaults.removeObject(forKey: Keys.loadedModel)
             }
         }
+    }
+
+    // MARK: - Calendar Integration
+    var calendarIntegrationEnabled: Bool {
+        get { userDefaults.object(forKey: Keys.calendarIntegrationEnabled) as? Bool ?? false }
+        set { userDefaults.set(newValue, forKey: Keys.calendarIntegrationEnabled) }
+    }
+
+    var selectedCalendarIDs: Set<String> {
+        get {
+            if let array = userDefaults.array(forKey: Keys.selectedCalendarIDs) as? [String] {
+                return Set(array)
+            }
+            return []
+        }
+        set {
+            userDefaults.set(Array(newValue), forKey: Keys.selectedCalendarIDs)
+        }
+    }
+
+    // MARK: - Advanced Settings
+    var showUpcomingInMenuBar: Bool {
+        get { userDefaults.object(forKey: Keys.showUpcomingInMenuBar) as? Bool ?? true }
+        set { userDefaults.set(newValue, forKey: Keys.showUpcomingInMenuBar) }
+    }
+
+    var showEventsWithNoParticipants: Bool {
+        get { userDefaults.object(forKey: Keys.showEventsWithNoParticipants) as? Bool ?? true }
+        set { userDefaults.set(newValue, forKey: Keys.showEventsWithNoParticipants) }
+    }
+
+    var showLiveMeetingIndicator: Bool {
+        get { userDefaults.object(forKey: Keys.showLiveMeetingIndicator) as? Bool ?? true }
+        set { userDefaults.set(newValue, forKey: Keys.showLiveMeetingIndicator) }
+    }
+
+    var launchAtLogin: Bool {
+        get { userDefaults.object(forKey: Keys.launchAtLogin) as? Bool ?? false }
+        set { userDefaults.set(newValue, forKey: Keys.launchAtLogin) }
+    }
+
+    var notifyScheduledMeetings: Bool {
+        get { userDefaults.object(forKey: Keys.notifyScheduledMeetings) as? Bool ?? true }
+        set { userDefaults.set(newValue, forKey: Keys.notifyScheduledMeetings) }
+    }
+
+    var realtimeFeedbackEnabled: Bool {
+        get { userDefaults.object(forKey: Keys.realtimeFeedbackEnabled) as? Bool ?? false }
+        set { userDefaults.set(newValue, forKey: Keys.realtimeFeedbackEnabled) }
     }
 }

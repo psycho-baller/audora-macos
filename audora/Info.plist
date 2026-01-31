@@ -4,13 +4,26 @@
 <dict>
 	<key>NSAudioCaptureUsageDescription</key>
 	<string>Audora captures audio for transcription. The mic following feature records only when other apps are using the microphone.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Audora captures microphone audio for transcription. Mic following mode records your microphone ONLY when other apps are actively using it.</string>
 	<key>SUEnableInstallerLauncherService</key>
 	<true/>
 	<key>SUFeedURL</key>
 	<string>https://raw.githubusercontent.com/psycho-baller/audora/main/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>BVXHOV8ZxPxKZ1swhFndymzew9nyd3si7849JA9cqsg=</string>
+	<key>CLERK_PUBLISHABLE_KEY</key>
+	<string>$(CLERK_PUBLISHABLE_KEY)</string>
+	<key>CONVEX_DEPLOYMENT_URL</key>
+	<string>$(CONVEX_DEPLOYMENT_URL)</string>
+		<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>audora</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

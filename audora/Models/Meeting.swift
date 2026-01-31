@@ -9,7 +9,7 @@ typealias Meeting = TranscriptionSession
 enum AudioSource: String, Codable, CaseIterable {
     case mic = "MIC"
     case system = "SYS"
-    
+
     var displayName: String {
         switch self {
         case .mic:
@@ -18,7 +18,7 @@ enum AudioSource: String, Codable, CaseIterable {
             return "Them"
         }
     }
-    
+
     var copyPrefix: String {
         switch self {
         case .mic:
@@ -27,7 +27,7 @@ enum AudioSource: String, Codable, CaseIterable {
             return "Them"
         }
     }
-    
+
     var icon: String {
         switch self {
         case .mic:
@@ -42,7 +42,7 @@ enum TranscriptionSource: String, Codable {
     case manual = "manual"           // User manually started recording
     case micFollowing = "micFollowing"  // Auto-started from mic following mode
     case autoRecording = "autoRecording" // Auto-started from auto recording mode
-    
+
     var displayName: String {
         switch self {
         case .manual:
@@ -53,7 +53,7 @@ enum TranscriptionSource: String, Codable {
             return "Auto Recording"
         }
     }
-    
+
     var icon: String {
         switch self {
         case .manual:
@@ -72,7 +72,7 @@ struct TranscriptChunk: Codable, Identifiable, Hashable {
     let source: AudioSource
     let text: String
     let isFinal: Bool
-    
+
     init(id: UUID = UUID(), timestamp: Date = Date(), source: AudioSource, text: String, isFinal: Bool = false) {
         self.id = id
         self.timestamp = timestamp
@@ -87,7 +87,7 @@ struct CollapsedTranscriptChunk: Identifiable {
     let timestamp: Date
     let source: AudioSource
     let combinedText: String
-    
+
     init(id: UUID = UUID(), timestamp: Date, source: AudioSource, combinedText: String) {
         self.id = id
         self.timestamp = timestamp
@@ -106,11 +106,13 @@ struct TranscriptionSession: Codable, Identifiable, Hashable {
     var templateId: UUID?  // Template used for this session
     var source: TranscriptionSource  // How this session was created
     var analytics: SpeechAnalytics?  // Speech analytics for this session
+    var audioFileURL: String?  // Path to the saved audio recording file
+    var calendarEventId: String?  // Link to source calendar event (if created from calendar)
     // MARK: - Data versioning
     /// Version of this TranscriptionSession record on disk. Useful for migration.
     var dataVersion: Int
     /// Current app data version. Increment whenever you make a breaking change to `TranscriptionSession` that requires migration.
-    static let currentDataVersion = 3  // Incremented for analytics addition
+    static let currentDataVersion = 4  // Incremented for audio file and calendarEventId support
     
     init(id: UUID = UUID(),
          date: Date = Date(),
@@ -121,6 +123,8 @@ struct TranscriptionSession: Codable, Identifiable, Hashable {
          templateId: UUID? = nil,
          source: TranscriptionSource = .manual,
          analytics: SpeechAnalytics? = nil,
+         audioFileURL: String? = nil,
+         calendarEventId: String? = nil,
          dataVersion: Int = TranscriptionSession.currentDataVersion) {
         self.id = id
         self.date = date
@@ -131,11 +135,13 @@ struct TranscriptionSession: Codable, Identifiable, Hashable {
         self.templateId = templateId
         self.source = source
         self.analytics = analytics
+        self.audioFileURL = audioFileURL
+        self.calendarEventId = calendarEventId
         self.dataVersion = dataVersion
     }
-    
+
     // `Codable` conformance now uses the compiler-synthesised implementation.
-    
+
     // Computed property for backward compatibility with existing code
     var transcript: String {
         return transcriptChunks
@@ -143,17 +149,17 @@ struct TranscriptionSession: Codable, Identifiable, Hashable {
             .map { "[\($0.source.rawValue)] \($0.text)" }
             .joined(separator: " ")
     }
-    
+
     // Formatted transcript for copying with collapsed sequential chunks
     var formattedTranscript: String {
         let finalChunks = transcriptChunks.filter { $0.isFinal }
-        
+
         guard !finalChunks.isEmpty else { return "" }
-        
+
         var result: [String] = []
         var currentSource: AudioSource?
         var currentTexts: [String] = []
-        
+
         for chunk in finalChunks {
             if chunk.source != currentSource {
                 // Finish previous section if exists
@@ -161,7 +167,7 @@ struct TranscriptionSession: Codable, Identifiable, Hashable {
                     let combinedText = currentTexts.joined(separator: " ")
                     result.append("\(source.copyPrefix): \(combinedText)")
                 }
-                
+
                 // Start new section
                 currentSource = chunk.source
                 currentTexts = [chunk.text]
@@ -170,25 +176,25 @@ struct TranscriptionSession: Codable, Identifiable, Hashable {
                 currentTexts.append(chunk.text)
             }
         }
-        
+
         // Finish last section
         if let source = currentSource, !currentTexts.isEmpty {
             let combinedText = currentTexts.joined(separator: " ")
             result.append("\(source.copyPrefix): \(combinedText)")
         }
-        
+
         return result.joined(separator: "  \n")
     }
-    
+
     // Collapsed chunks for UI display
     var collapsedTranscriptChunks: [CollapsedTranscriptChunk] {
         guard !transcriptChunks.isEmpty else { return [] }
-        
+
         var result: [CollapsedTranscriptChunk] = []
         var currentSource: AudioSource?
         var currentTexts: [String] = []
         var currentTimestamp: Date?
-        
+
         for chunk in transcriptChunks {
             if chunk.source != currentSource {
                 // Finish previous section if exists
@@ -200,7 +206,7 @@ struct TranscriptionSession: Codable, Identifiable, Hashable {
                         combinedText: combinedText
                     ))
                 }
-                
+
                 // Start new section
                 currentSource = chunk.source
                 currentTexts = [chunk.text]
@@ -210,7 +216,7 @@ struct TranscriptionSession: Codable, Identifiable, Hashable {
                 currentTexts.append(chunk.text)
             }
         }
-        
+
         // Finish last section
         if let source = currentSource, !currentTexts.isEmpty, let timestamp = currentTimestamp {
             let combinedText = currentTexts.joined(separator: " ")
@@ -220,10 +226,10 @@ struct TranscriptionSession: Codable, Identifiable, Hashable {
                 combinedText: combinedText
             ))
         }
-        
+
         return result
     }
-    
+
     // Separate computed properties for mic and system transcripts
     var micTranscript: String {
         return transcriptChunks
@@ -231,11 +237,11 @@ struct TranscriptionSession: Codable, Identifiable, Hashable {
             .map { $0.text }
             .joined(separator: " ")
     }
-    
+
     var systemTranscript: String {
         return transcriptChunks
             .filter { $0.source == .system && $0.isFinal }
             .map { $0.text }
             .joined(separator: " ")
     }
-} 
+}

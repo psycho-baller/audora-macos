@@ -50,6 +50,13 @@
             ReferencedContainer = "container:audora.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <EnvironmentVariables>
+         <EnvironmentVariable
+            key = "CONVEX_DEPLOYMENT_URL"
+            value = "https://brilliant-iguana-281.convex.cloud"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+      </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"

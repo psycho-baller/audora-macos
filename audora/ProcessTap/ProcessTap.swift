@@ -101,20 +101,20 @@ final class ProcessTap {
             var err: OSStatus
 
             err = AudioDeviceStop(aggregateDeviceID, deviceProcID)
-            if err != noErr {
+            if err != noErr && err != 560947818 { // Ignore "bad object" error if already destroyed
                 logger.warning("Failed to stop aggregate device: \(err, privacy: .public)")
             }
 
             if let deviceProcID {
                 err = AudioDeviceDestroyIOProcID(aggregateDeviceID, deviceProcID)
-                if err != noErr {
+                if err != noErr && err != 560947818 { // Ignore "bad object" error if already destroyed
                     logger.warning("Failed to destroy device I/O proc: \(err, privacy: .public)")
                 }
                 self.deviceProcID = nil
             }
 
             err = AudioHardwareDestroyAggregateDevice(aggregateDeviceID)
-            if err != noErr {
+            if err != noErr && err != 560947818 { // Ignore "bad object" error if already destroyed
                 logger.warning("Failed to destroy aggregate device: \(err, privacy: .public)")
             }
             aggregateDeviceID = .unknown
@@ -123,7 +123,12 @@ final class ProcessTap {
         if processTapID.isValid {
             let errTapDestroy = AudioHardwareDestroyProcessTap(processTapID)
             if errTapDestroy != noErr {
-                logger.warning("Failed to destroy audio tap: \(errTapDestroy, privacy: .public)")
+                // Error 560947818 (kAudioHardwareBadObjectError) is expected if object was already destroyed
+                if errTapDestroy != 560947818 {
+                    logger.warning("Failed to destroy audio tap: \(errTapDestroy, privacy: .public)")
+                } else {
+                    logger.debug("Audio tap already destroyed (expected if invalidated externally)")
+                }
             }
             self.processTapID = .unknown
         }
@@ -275,7 +280,7 @@ final class ProcessTap {
 
 }
 
-private extension AudioDeviceID {
+extension AudioDeviceID {
     func getTotalOutputChannelCount() throws -> UInt32 {
         var address = AudioObjectPropertyAddress(
             mSelector: kAudioDevicePropertyStreamConfiguration,

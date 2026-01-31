@@ -6,9 +6,9 @@ import Foundation
 /// Centralized error handling service
 class ErrorHandler {
     static let shared = ErrorHandler()
-    
+
     private init() {}
-    
+
     /// Handles errors from OpenAI API calls and network requests
     /// - Parameter error: The error to handle
     /// - Returns: User-friendly error message
@@ -17,22 +17,22 @@ class ErrorHandler {
         if let urlError = error as? URLError {
             return handleNetworkError(urlError)
         }
-        
+
         // Handle HTTP response errors
         if let httpError = error as? HTTPError {
             return handleHTTPError(httpError)
         }
-        
-        // Handle OpenAI API errors by checking error description
+
+        // Handle API errors by checking error description
         let errorDescription = error.localizedDescription.lowercased()
-        if let openAIError = categorizeOpenAIError(errorDescription) {
-            return openAIError
+        if let apiError = categorizeAPIError(errorDescription) {
+            return apiError
         }
-        
+
         // Generic error fallback
         return "An unexpected error occurred: \(error.localizedDescription)"
     }
-    
+
     /// Handles WebSocket close codes
     /// - Parameter closeCode: WebSocket close code
     /// - Returns: User-friendly error message
@@ -56,7 +56,7 @@ class ErrorHandler {
         default:   return "Connection error (code \(closeCode)). Please try again."
         }
     }
-    
+
     /// Handles HTTP status codes
     /// - Parameter statusCode: HTTP status code
     /// - Parameter message: Optional error message
@@ -83,7 +83,7 @@ class ErrorHandler {
             return "HTTP error \(statusCode): \(message ?? "Unknown error")"
         }
     }
-    
+
     /// Determines if an error should trigger a retry
     /// - Parameter error: The error to check
     /// - Returns: True if the error is retryable
@@ -97,7 +97,7 @@ class ErrorHandler {
                 return false
             }
         }
-        
+
         // Handle POSIX socket errors (e.g., "Socket is not connected")
         if let nsError = error as NSError?, nsError.domain == NSPOSIXErrorDomain {
             switch nsError.code {
@@ -107,17 +107,17 @@ class ErrorHandler {
                 return false
             }
         }
-        
+
         // WebSocket close codes
         if let closeCode = (error as NSError?)?.userInfo["closeCode"] as? Int {
             return closeCode < 4000 // Only retry for non-API errors
         }
-        
+
         return false
     }
-    
+
     // MARK: - Private Methods
-    
+
     private func handleNetworkError(_ urlError: URLError) -> String {
         switch urlError.code {
         case .notConnectedToInternet:
@@ -140,12 +140,12 @@ class ErrorHandler {
             return "Network error: \(urlError.localizedDescription)"
         }
     }
-    
+
     private func handleHTTPError(_ httpError: HTTPError) -> String {
         return handleHTTPStatusCode(httpError.statusCode, message: httpError.message)
     }
-    
-    private func categorizeOpenAIError(_ errorDescription: String) -> String? {
+
+    private func categorizeAPIError(_ errorDescription: String) -> String? {
         if errorDescription.contains("unauthorized") || errorDescription.contains("401") {
             return ErrorMessage.invalidAPIKey
         } else if errorDescription.contains("insufficient") || errorDescription.contains("402") {
@@ -159,7 +159,7 @@ class ErrorHandler {
         } else if errorDescription.contains("not found") || errorDescription.contains("404") {
             return ErrorMessage.apiEndpointNotFound
         }
-        
+
         return nil
     }
 }
@@ -168,7 +168,7 @@ class ErrorHandler {
 struct HTTPError: Error {
     let statusCode: Int
     let message: String?
-    
+
     init(statusCode: Int, message: String? = nil) {
         self.statusCode = statusCode
         self.message = message
@@ -177,23 +177,23 @@ struct HTTPError: Error {
 
 /// Common error messages
 enum ErrorMessage {
-    static let noAPIKey = "OpenAI API key not found. Please configure your API key in Settings."
+    static let noAPIKey = "API key not found. Please check your configuration."
     static let noTemplate = "No template content found. Please select a valid template."
     static let noTranscript = "No transcript available. Please record some audio first."
-    static let connectionTimeout = "Failed to connect to OpenAI transcription service. Please check your internet connection and API key."
+    static let connectionTimeout = "Failed to connect to transcription service. Please check your internet connection."
     static let configurationFailed = "Failed to configure transcription session."
     static let invalidURL = "Invalid API URL configuration."
-    static let noModelsAvailable = "No models available with your API key. Please check your account status."
+    static let noModelsAvailable = "No models available. Please check your account status."
 
     // Centralized messages used across handlers
     static let success = "Success"
     static let badRequest = "Bad request. Please check your input."
-    static let invalidAPIKey = "Invalid OpenAI API key. Please check your API key in Settings."
-    static let insufficientFunds = "Insufficient funds in your OpenAI account. Please add credits to your account."
-    static let accessForbidden = "Access forbidden. Please check your API key permissions."
+    static let invalidAPIKey = "Invalid API key or configuration. Please check your settings."
+    static let insufficientFunds = "Insufficient credits. Please add credits to your account."
+    static let accessForbidden = "Access forbidden. Please check your permissions."
     static let apiEndpointNotFound = "API endpoint not found. Please update the app."
-    static let rateLimited = "OpenAI API rate limit exceeded. Please try again later."
-    static let apiServerError = "OpenAI server error. Please try again later."
+    static let rateLimited = "API rate limit exceeded. Please try again later."
+    static let apiServerError = "Transcription server error. Please try again later."
     static let requestTimeout = "Request timeout. Please try again."
     static let requestTooLarge = "Request too large. Please try again."
     static let unsupportedData = "Unsupported data format. Please update the app."

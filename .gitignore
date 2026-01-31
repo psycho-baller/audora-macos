@@ -122,5 +122,20 @@ Temporary Items
 APIKeys.swift
 .env
 .env.local
+Config.xcconfig
 
 releases/
+# Xcode
+audora.entitlements
+audora.xcodeproj/project.pbxproj
+audora.xcodeproj/xcshareddata/xcschemes/Audora.xcscheme
+audora.xcodeproj/xcuserdata/
+
+# Convex
+convex/_generated/
+.convex/
+convex.json
+
+# Node.js (for Convex CLI)
+node_modules/
+package-lock.json

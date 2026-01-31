@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 import PostHog
 import RunAnywhere
+import EventKit
 
 @MainActor
 class SettingsViewModel: ObservableObject {
@@ -66,18 +67,30 @@ class SettingsViewModel: ObservableObject {
         } catch {
             print("Failed to delete model: \(error)")
         }
+    @Published var calendars: [EKCalendar] = []
+
+    init() {
+        loadTemplates()
+
+        // Load calendars if authorized
+        if CalendarManager.shared.authorizationStatus == .authorized {
+            CalendarManager.shared.fetchCalendars()
+        }
+
+        // Subscribe to calendar updates
+        CalendarManager.shared.$calendars.assign(to: &$calendars)
     }
-    
+
     /// Loads the API key from keychain (only called when actually needed)
     func loadAPIKey() {
         if settings.openAIKey.isEmpty {
             settings.openAIKey = KeychainHelper.shared.getAPIKey() ?? ""
         }
     }
-    
+
     func loadTemplates() {
         templates = LocalStorageManager.shared.loadTemplates()
-        
+
         // Validate that the selected template still exists
         if let selectedId = settings.selectedTemplateId {
             if !templates.contains(where: { $0.id == selectedId }) {
@@ -85,7 +98,7 @@ class SettingsViewModel: ObservableObject {
                 settings.selectedTemplateId = nil
             }
         }
-        
+
         // If no template is selected, select the first default template
         if settings.selectedTemplateId == nil {
             if let defaultTemplate = templates.first(where: { $0.title == "Standard Meeting" }) {
@@ -96,7 +109,7 @@ class SettingsViewModel: ObservableObject {
             }
         }
     }
-    
+
     func saveSettings(showMessage: Bool = true) {
         // Validate that systemPrompt contains all required template placeholders
         let requiredKeys = ["meeting_title", "meeting_date", "transcript", "user_blurb", "user_notes", "template_content"]
@@ -128,24 +141,34 @@ class SettingsViewModel: ObservableObject {
             }
         }
     }
-    
+
     func completeOnboarding() {
         settings.hasCompletedOnboarding = true
         settings.hasAcceptedTerms = true
         saveSettings(showMessage: false)
         PostHogSDK.shared.capture("onboarding_completed")
     }
-    
+
     func resetToDefaults() {
         settings.systemPrompt = Settings.defaultSystemPrompt()
     }
-    
+
     func resetOnboarding() {
         settings.hasCompletedOnboarding = false
         saveSettings(showMessage: false)
-        
+
         // Force app to restart or recreate views by posting a notification
         // This will cause ContentView to re-evaluate and show onboarding
-        NotificationCenter.default.post(name: Notification.Name("OnboardingReset"), object: nil)
+        NotificationCenter.default.post(name: .onboardingReset, object: nil)
     }
-} 
+
+    #if DEBUG
+    func deleteAllMeetings() {
+        // Delete all meetings from storage
+        LocalStorageManager.shared.deleteAllMeetings()
+
+        // Post notification to reload meetings in the UI
+        NotificationCenter.default.post(name: .meetingsDeleted, object: nil)
+    }
+    #endif
+}

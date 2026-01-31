@@ -22,7 +22,8 @@ class AudioManager: NSObject, ObservableObject {
     private var audioEngine = AVAudioEngine()
     private var micSocketTask: URLSessionWebSocketTask?
     private var systemSocketTask: URLSessionWebSocketTask?
-    private let realtimeURL = URL(string: "wss://api.openai.com/v1/realtime?intent=transcription")!
+    private let speechmaticsURL = URL(string: "wss://eu2.rt.speechmatics.com/v2/en")!
+
 
     // Unique identifier for the current recording session
     private var sessionID = UUID()
@@ -49,29 +50,9 @@ class AudioManager: NSObject, ObservableObject {
     // Session refresh timers to prevent 30-minute expiry
     private var sessionRefreshTimers: [AudioSource: Timer] = [:]
 
-    // MARK: - Auto-Recording Properties
+    // Add reference to ConvexService
+    var convexService: ConvexService? = ConvexService.shared
 
-    @Published var isAutoRecordingEnabled = false
-    private var audioMonitor: SystemAudioMonitor?
-    private var autoStartDelay: Timer?
-    private var autoStopDelay: Timer?
-    private let startDelayTime: TimeInterval = 0.5  // Delay before auto-start
-    private let stopDelayTime: TimeInterval = 3.0   // Delay before auto-stop
-
-    // MARK: - Mic Following Properties
-
-    @Published var isMicFollowingEnabled = false
-    private var micMonitor: MicUsageMonitor?
-    private var micFollowStartDelay: Timer?
-    private var micFollowStopDelay: Timer?  // Used to delay stopping when other apps stop using the mic
-    private var activityTracker: ActivityTracker?
-    private var silenceProbeTimer: Timer?  // Periodically checks for silence
-    private var isRecordingDueToMicFollowing = false  // Track if we started due to mic following
-    private var currentMicFollowingSession: TranscriptionSession?  // Track current mic following session
-    private let micFollowStartDelayTime: TimeInterval = 0.5  // Delay before starting when other app uses mic
-    private let silenceWindow: TimeInterval = 3.0   // Stop after 3 seconds of silence
-    private let probePause: TimeInterval = 0.1      // Wait time during probe
-    private let probeInterval: TimeInterval = 1.0   // Check for silence every 1 second
 
     private override init() {
         super.init()
@@ -92,6 +73,7 @@ class AudioManager: NSObject, ObservableObject {
 
                 print("🎤 Running applications changed, checking if tap restart is needed.")
                 Task {
+                    try? await Task.sleep(for: .milliseconds(500))
                     await self.restartSystemAudioTapIfNeeded()
                 }
             }
@@ -100,6 +82,64 @@ class AudioManager: NSObject, ObservableObject {
 
     deinit {
         NotificationCenter.default.removeObserver(self)
+    }
+
+    // MARK: - Audio Output Detection
+
+    /// Detects whether the user is currently using headphones or speakers
+    /// Returns true if headphones (wired or Bluetooth) are connected
+    private func isUsingHeadphones() -> Bool {
+        // macOS: Use Core Audio to check the default output device
+        do {
+            // Get the default output device
+            let defaultOutputID = try AudioDeviceID.readDefaultSystemOutputDevice()
+
+            // Check the device's transport type
+            var address = AudioObjectPropertyAddress(
+                mSelector: kAudioDevicePropertyTransportType,
+                mScope: kAudioObjectPropertyScopeGlobal,
+                mElement: kAudioObjectPropertyElementMain
+            )
+
+            var transportType: UInt32 = 0
+            var dataSize: UInt32 = UInt32(MemoryLayout<UInt32>.size)
+            let err = AudioObjectGetPropertyData(defaultOutputID, &address, 0, nil, &dataSize, &transportType)
+
+            guard err == noErr else {
+                print("⚠️ Error reading audio device transport type: \(err)")
+                return false
+            }
+
+            // Check if the transport type indicates headphones
+            switch transportType {
+            case kAudioDeviceTransportTypeBluetooth,
+                 kAudioDeviceTransportTypeBluetoothLE:
+                // Bluetooth devices are likely headphones/earbuds
+                print("🎧 Detected Bluetooth headphones")
+                return true
+            default:
+                // For other transport types (USB, BuiltIn, etc.), check device name
+                if let deviceName = try? defaultOutputID.getDeviceName() {
+                    let name = deviceName.lowercased()
+                    // Check for common headphone/headset keywords
+                    if name.contains("headphone") ||
+                       name.contains("headset") ||
+                       name.contains("airpods") ||
+                       name.contains("beats") ||
+                       name.contains("earbuds") ||
+                       name.contains("earpods") {
+                        print("🎧 Detected headphones via device name: \(deviceName)")
+                        return true
+                    }
+                }
+
+                print("🔊 Using built-in/external speakers")
+                return false
+            }
+        } catch {
+            print("⚠️ Error checking macOS audio output device: \(error)")
+            return false
+        }
     }
 
     func startRecording() {
@@ -116,67 +156,44 @@ class AudioManager: NSObject, ObservableObject {
         // Stop any in-progress recording
         stopRecordingInternal()
 
-        // Validate API key and account status before connecting
+        // Validate authentication before connecting
         Task {
-            let validationResult = await APIKeyValidator.shared.validateCurrentAPIKey()
-            switch validationResult {
-            case .failure(let error):
-                let errorMsg = error.localizedDescription
-                print("❌ API key validation failed: \(errorMsg)")
+            // Check auth state
+            let authState = await MainActor.run { ConvexService.shared.authState }
+            guard case .authenticated = authState else {
+                let errorMsg = "Please sign in to start recording."
+                print("❌ Authentication required: \(errorMsg)")
                 DispatchQueue.main.async {
                     self.errorMessage = errorMsg
                 }
-            case .success:
-                // Proceed with taps after cleanup
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    // Start microphone capture
-                    self.startMicrophoneTap()
-                    // Start system audio capture asynchronously
-                    Task {
-                        await self.startSystemAudioTap()
-                    }
+                return
+            }
+
+            // Proceed with taps after auth check
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                // Always start microphone - user prioritizes voice transcription
+                self.startMicrophoneTap()
+
+                // Check audio output device
+                let usingHeadphones = self.isUsingHeadphones()
+
+                if usingHeadphones {
+                    print("🎧 Headphones detected - optimal recording setup")
+                } else {
+                    // Using speakers - warn about potential duplicates but still record
+                    print("🔊 Speakers detected - may have some echo/duplicates")
+                    print("💡 Connect headphones for best results (prevents echo)")
+                }
+
+                // Always start system audio capture
+                Task {
+                    await self.startSystemAudioTap()
                 }
             }
         }
     }
 
-    /// Start recording microphone only (for mic following mode)
-    private func startMicrophoneOnlyRecording() {
-        print("Starting microphone-only recording...")
 
-        // Bump session ID so any old async callbacks can be ignored
-        sessionID = UUID()
-
-        // Clear any previous errors
-        DispatchQueue.main.async {
-            self.errorMessage = nil
-        }
-
-        // Stop any in-progress recording
-        stopRecordingInternal()
-
-        // Validate API key and account status before connecting
-        Task {
-            let validationResult = await APIKeyValidator.shared.validateCurrentAPIKey()
-            switch validationResult {
-            case .failure(let error):
-                let errorMsg = error.localizedDescription
-                print("❌ API key validation failed: \(errorMsg)")
-                DispatchQueue.main.async {
-                    self.errorMessage = errorMsg
-                }
-            case .success:
-                // Proceed with microphone tap only
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    // Start microphone capture ONLY (no system audio)
-                    self.startMicrophoneTap()
-                    // Mark as recording
-                    self.isRecording = true
-                    AudioLevelManager.shared.updateRecordingState(true)
-                }
-            }
-        }
-    }
 
     private func stopRecordingInternal() {
         print("Internal cleanup...")
@@ -271,15 +288,15 @@ class AudioManager: NSObject, ObservableObject {
                     }
                 }
 
-                // Track activity for mic following mode
-                self.activityTracker?.onAudioBuffer(buffer)
+                // Record audio buffer
+                AudioRecordingManager.shared.recordMicBuffer(buffer, format: recordingFormat)
 
                 self.processAudioBuffer(buffer, converter: converter, targetFormat: targetFormat, source: .mic)
             }
 
             audioEngine.prepare()
             try audioEngine.start()
-            connectToOpenAIRealtime(source: .mic)
+            connectToSpeechmatics(source: .mic)
             print("✅ Microphone tap started successfully")
             micRetryCount = 0  // Reset on success
 
@@ -326,8 +343,15 @@ class AudioManager: NSObject, ObservableObject {
 
         // Get all running processes that are producing audio
         let allProcessObjectIDs = audioProcessController.processes.map { $0.objectID }
+
+        // Provide better diagnostics
+        print("📊 Found \(allProcessObjectIDs.count) audio-producing process(es)")
         if allProcessObjectIDs.isEmpty {
             print("⚠️ No audio-producing processes found. System audio tap might not capture anything.")
+            print("   💡 Make sure an app is playing audio (Zoom, Teams, etc.)")
+        } else {
+            let processNames = audioProcessController.processes.prefix(3).map { $0.name }
+            print("   Processes: \(processNames.joined(separator: ", "))\(audioProcessController.processes.count > 3 ? "..." : "")")
         }
 
         // Configure the tap for system-wide audio
@@ -337,7 +361,19 @@ class AudioManager: NSObject, ObservableObject {
 
         // Check for activation errors
         if let tapError = newTap.errorMessage {
-            let errorMsg = "Failed to activate system audio tap: \(tapError)"
+            var errorMsg = "Failed to activate system audio tap: \(tapError)"
+
+            // Provide helpful guidance based on error
+            if tapError.contains("error 560947818") || tapError.contains("error -536870206") {
+                errorMsg += "\n\n💡 This usually means:\n"
+                errorMsg += "   1. Screen Recording permission is required\n"
+                errorMsg += "   2. Go to System Settings > Privacy & Security > Screen & System Audio Recording\n"
+                errorMsg += "   3. Enable Audora in the list\n"
+                errorMsg += "   4. Restart the app after granting permission"
+            } else if allProcessObjectIDs.isEmpty {
+                errorMsg += "\n\n💡 No audio-producing apps detected. Start a meeting app (Zoom, Teams, etc.) first."
+            }
+
             print("❌ \(errorMsg)")
             self.errorMessage = errorMsg
             if !isRestart { stopRecording() }
@@ -352,12 +388,9 @@ class AudioManager: NSObject, ObservableObject {
             try startTapIO(newTap)
 
             if !isRestart {
-                connectToOpenAIRealtime(source: .system)
+                connectToSpeechmatics(source: .system)
                 self.isRecording = true
                 AudioLevelManager.shared.updateRecordingState(true)
-
-                // Start audio monitoring now that we have system audio access
-                self.startAudioMonitoringIfNeeded()
             }
             print("✅ System audio tap started successfully (isRestart: \(isRestart))")
 
@@ -449,8 +482,15 @@ class AudioManager: NSObject, ObservableObject {
         }
 
         try tap.run(on: tapQueue) { [weak self] _, inInputData, _, _, _ in
-            guard let self = self,
-                  let buffer = AVAudioPCMBuffer(pcmFormat: format, bufferListNoCopy: inInputData, deallocator: nil) else {
+            guard let self = self else { return }
+
+            // Check if tap is still active before processing
+            guard self.isTapActive, self.processTap === tap else {
+                // Tap was invalidated, stop processing
+                return
+            }
+
+            guard let buffer = AVAudioPCMBuffer(pcmFormat: format, bufferListNoCopy: inInputData, deallocator: nil) else {
                 return
             }
 
@@ -476,19 +516,28 @@ class AudioManager: NSObject, ObservableObject {
                 }
             }
 
+            // Record audio buffer
+            AudioRecordingManager.shared.recordSystemBuffer(buffer, format: format)
+
             self.processAudioBuffer(buffer, converter: converter, targetFormat: targetFormat, source: .system)
 
-        } invalidationHandler: { [weak self] _ in
+        } invalidationHandler: { [weak self] invalidatedTap in
             guard let self else { return }
             print("Audio tap was invalidated.")
 
-            if !self.isRestartingSystemTap {
+            // Mark tap as inactive immediately to prevent further processing
+            self.isTapActive = false
+
+            // Only restart if this was unexpected and we're still recording
+            if !self.isRestartingSystemTap && self.isRecording {
                 print("Tap invalidated unexpectedly. Restarting system audio tap.")
-                Task {
+                Task { @MainActor in
+                    // Small delay to let Core Audio clean up
+                    try? await Task.sleep(for: .milliseconds(100))
                     await self.restartSystemAudioTap()
                 }
             } else {
-                print("Tap invalidated as part of a restart. Not stopping recording.")
+                print("Tap invalidated as part of a restart or recording stopped. Not restarting.")
             }
         }
     }
@@ -531,12 +580,7 @@ class AudioManager: NSObject, ObservableObject {
         sessionRefreshTimers.values.forEach { $0.invalidate() }
         sessionRefreshTimers.removeAll()
 
-        // Clean up mic following state
-        if isRecordingDueToMicFollowing {
-            isRecordingDueToMicFollowing = false
-            stopSilenceProbeTimer()
-            activityTracker = nil
-        }
+
 
         print("Recording stopped")
     }
@@ -571,21 +615,36 @@ class AudioManager: NSObject, ObservableObject {
         sendAudioData(data, source: source)
     }
 
-    private func connectToOpenAIRealtime(source: AudioSource) {
-        guard let key = KeychainHelper.shared.getAPIKey(), !key.isEmpty else {
-            let errorMsg = ErrorMessage.noAPIKey
-            print("❌ \(errorMsg)")
-            DispatchQueue.main.async {
-                self.errorMessage = errorMsg
-            }
-            return
-        }
-
+    private func connectToSpeechmatics(source: AudioSource) {
+        // Use Convex Service to fetch JWT
         let session = URLSession(configuration: .default)
-        var request = URLRequest(url: realtimeURL)
-        request.addValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
-        request.addValue("realtime=v1", forHTTPHeaderField: "OpenAI-Beta")
+        var request = URLRequest(url: speechmaticsURL)
 
+        Task { [weak self] in
+            guard let self = self else { return }
+
+            do {
+                if let convexService = self.convexService {
+                    let jwt = try await convexService.getSpeechmaticsJWT()
+                    request.addValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
+                } else {
+                     throw NSError(domain: "AudioManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Convex Service not initialized"])
+                }
+
+                await self.establishConnection(request: request, session: session, source: source)
+
+            } catch {
+                let errorMsg = "\(ErrorMessage.configurationFailed): \(ErrorHandler.shared.handleError(error))"
+                print("❌ \(errorMsg)")
+                print("❌ Raw Error Detail: \(error)") // Log raw error for debugging
+                await MainActor.run {
+                    self.errorMessage = errorMsg
+                }
+            }
+        }
+    }
+
+    private func establishConnection(request: URLRequest, session: URLSession, source: AudioSource) async {
         let task = session.webSocketTask(with: request)
 
         // Add connection monitoring
@@ -612,7 +671,7 @@ class AudioManager: NSObject, ObservableObject {
         let sessionRefreshTimer = Timer.scheduledTimer(withTimeInterval: 28 * 60.0, repeats: false) { [weak self] _ in
             guard let self = self, self.isRecording else { return }
             print("📝 Proactively refreshing session for \(source) to prevent expiry...")
-            self.connectToOpenAIRealtime(source: source)
+                self.connectToSpeechmatics(source: source)
         }
         sessionRefreshTimers[source] = sessionRefreshTimer
 
@@ -628,21 +687,18 @@ class AudioManager: NSObject, ObservableObject {
             }
         }
 
-        // Send initial configuration
+        // Send initial configuration for Speechmatics V2
         let config: [String: Any] = [
-            "type": "transcription_session.update",
-            "session": [
-                "input_audio_format": "pcm16",
-                "input_audio_transcription": [
-                    "model": "gpt-4o-mini-transcribe",
-                    "language": "en"
-                ],
-                "turn_detection": [
-                    "type": "server_vad",
-                    "threshold": 0.5,
-                    "prefix_padding_ms": 300,
-                    "silence_duration_ms": 200
-                ]
+            "message": "StartRecognition",
+            "audio_format": [
+                "type": "raw",
+                "encoding": "pcm_s16le",
+                "sample_rate": 24000
+            ],
+            "transcription_config": [
+                "language": "en",
+                "enable_partials": true,
+                "max_delay": 2
             ]
         ]
 
@@ -682,7 +738,7 @@ class AudioManager: NSObject, ObservableObject {
         }
 
         receiveMessage(for: source, sessionID: thisSession)
-        print("🌐 Connected to OpenAI Realtime (\(source))")
+        print("🌐 Connected to Speechmatics (\(source))")
     }
 
     private func receiveMessage(for source: AudioSource, sessionID: UUID) {
@@ -733,7 +789,7 @@ class AudioManager: NSObject, ObservableObject {
                     if ErrorHandler.shared.shouldRetry(error) {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
                             guard let self = self, self.isRecording, self.sessionID == sessionID else { return }
-                            self.connectToOpenAIRealtime(source: source)
+                            self.connectToSpeechmatics(source: source)
                         }
                     }
                 }
@@ -750,7 +806,7 @@ class AudioManager: NSObject, ObservableObject {
             print("📝 Session expired for \(source) (WebSocket error), attempting to restart connection...")
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
                 guard let self = self, self.isRecording else { return }
-                self.connectToOpenAIRealtime(source: source)
+                self.connectToSpeechmatics(source: source)
             }
             // Return session expired message but don't stop recording
             return ErrorMessage.sessionExpired
@@ -772,202 +828,124 @@ class AudioManager: NSObject, ObservableObject {
         guard let data = text.data(using: .utf8),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
 
-        // Early error handling for any payload with "error" key
-        if let errorDict = json["error"] as? [String: Any] {
-            let errorType = errorDict["type"] as? String ?? "unknown_error"
-            let errorCode = errorDict["code"] as? String ?? ""
-            let errorMessage = errorDict["message"] as? String ?? "Unknown error occurred"
-            print("❌ OpenAI Realtime API Error (\(source)) - Type: \(errorType), Code: \(errorCode), Message: \(errorMessage)")
+        guard let messageType = json["message"] as? String else { return }
 
-            // Map common error codes to user-friendly messages
-            let userFriendlyMessage: String
-            switch errorCode {
-            case "insufficient_quota", "quota_exceeded":
-                userFriendlyMessage = ErrorMessage.insufficientFunds
-            case "invalid_api_key", "authentication_failed":
-                userFriendlyMessage = ErrorMessage.invalidAPIKey
-            case "rate_limit_exceeded":
-                userFriendlyMessage = ErrorMessage.rateLimited
-            case "server_error":
-                userFriendlyMessage = ErrorMessage.apiServerError
-            case "access_denied", "forbidden":
-                userFriendlyMessage = ErrorMessage.accessForbidden
-            case "session_expired":
-                // Handle session expiry by automatically restarting the connection
-                print("📝 Session expired for \(source), attempting to restart connection...")
-                userFriendlyMessage = ErrorMessage.sessionExpired
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-                    guard let self = self, self.isRecording else { return }
-                    self.connectToOpenAIRealtime(source: source)
-                }
-                // Show informational message but don't stop recording
-                DispatchQueue.main.async {
-                    self.errorMessage = userFriendlyMessage
-                    // Clear the message after a few seconds
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                        if self.errorMessage == userFriendlyMessage {
-                            self.errorMessage = nil
-                        }
-                    }
-                }
-                return
-            default:
-                // Check for session expiry in the error message
-                if errorMessage.lowercased().contains("session hit the maximum duration") ||
-                   errorMessage.lowercased().contains("session expired") {
-                    // Handle session expiry by automatically restarting the connection
-                    print("📝 Session expired for \(source), attempting to restart connection...")
-                    userFriendlyMessage = ErrorMessage.sessionExpired
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-                        guard let self = self, self.isRecording else { return }
-                        self.connectToOpenAIRealtime(source: source)
-                    }
-                    // Show informational message but don't stop recording
-                    DispatchQueue.main.async {
-                        self.errorMessage = userFriendlyMessage
-                        // Clear the message after a few seconds
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                            if self.errorMessage == userFriendlyMessage {
-                                self.errorMessage = nil
-                            }
-                        }
-                    }
-                    return
-                }
-                // Check if this is a transcription failure (often indicates insufficient funds)
-                else if errorMessage.lowercased().contains("input transcription failed") ||
-                        errorMessage.lowercased().contains("transcription failed") {
-                    userFriendlyMessage = "\(errorMessage)\n\nNote: This error typically occurs when your OpenAI account has insufficient funds. Please check your account balance and add credits if needed."
-                } else {
-                    userFriendlyMessage = "Transcription error: \(errorMessage)"
+        switch messageType {
+        case "AddTranscript":
+            // Handle transcriptions
+            guard let metadata = json["metadata"] as? [String: Any],
+                  let results = json["results"] as? [[String: Any]] else { return }
+
+            var transcriptBuffer = ""
+            var isFinal = false
+
+            // Check if this is a final transcript (Speechmatics default is partial unless finalized)
+            // Actually Speechmatics V2 sends 'AddTranscript' for both.
+            // We use 'is_approximate' or similar fields if available, but usually V2 results are additive/corrections.
+            // Simplified: If 'transcript' field exists in metadata, use it? No.
+            // Iterate results.
+
+            for result in results {
+                if let alternatives = result["alternatives"] as? [[String: Any]],
+                   let firstAlt = alternatives.first,
+                   let content = firstAlt["content"] as? String {
+                     transcriptBuffer += content + " "
                 }
             }
 
-            DispatchQueue.main.async {
-                self.errorMessage = userFriendlyMessage
-                // Stop recording when transcription errors occur
-                if self.isRecording {
-                    self.stopRecording()
+            // Cleanup buffer
+            transcriptBuffer = transcriptBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
+            if transcriptBuffer.isEmpty { return }
+
+            // Speechmatics V2 sends finalized results when "is_eos" is true?
+            // Or look at 'type' in results?
+            // For now, treat all AddTranscript as partials updating the current view,
+            // unless we determine it's a stabilized segment.
+            // To properly match OpenAI's 'delta' vs 'completed', we'd need to track sequence numbers.
+            // For simplicity in this migration: treating as STREAMING updates.
+
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+
+                // For Speechmatics, AddTranscript usually contains new words.
+                // However, without complex logic, we might just append?
+                // Actually, 'results' contains a list of words.
+
+                // Let's assume we treat it as an update to the current "Interim"
+                self.currentInterim[source] = (self.currentInterim[source] ?? "") + " " + transcriptBuffer
+
+                // Update the UI chunk (marking as interim)
+
+                // Remove previous interim chunk
+                if let lastIndex = self.transcriptChunks.lastIndex(where: { !$0.isFinal && $0.source == source }) {
+                    self.transcriptChunks.remove(at: lastIndex)
                 }
+
+                let chunk = TranscriptChunk(
+                    timestamp: Date(),
+                    source: source,
+                    text: self.currentInterim[source] ?? "",
+                    isFinal: false // Keep it false until EndOfTranscript or explicit finalization logic
+                )
+                self.transcriptChunks.append(chunk)
             }
-            return
-        }
 
-        guard let type = json["type"] as? String else { return }
+        case "EndOfTranscript":
+             // Mark current interim as final
+             DispatchQueue.main.async { [weak self] in
+                 guard let self = self else { return }
 
-        // Check for general failure status in any event
-        if let status = json["status"] as? String, status == "failed" {
-            let itemId = json["item_id"] as? String ?? json["id"] as? String ?? "unknown"
-            print("❌ Event failed (\(source)): type=\(type), item=\(itemId)")
-            let errorMessage = "Transcription failed for \(type) (item: \(itemId))\n\nNote: This error typically occurs when your OpenAI account has insufficient funds. Please check your account balance and add credits if needed."
-            DispatchQueue.main.async {
-                self.errorMessage = errorMessage
-                // Stop recording when transcription errors occur
-                if self.isRecording {
-                    self.stopRecording()
-                }
-            }
-            return
-        }
+                 let finalText = self.currentInterim[source] ?? ""
+                 if finalText.isEmpty { return }
 
-        // Debug logging for key events (can be removed later)
-        if type.contains("transcription") || type.contains("error") {
-            print("🔍 Event (\(source)): \(type) - \(String(data: data, encoding: .utf8) ?? "invalid")")
-        }
+                 // Remove interim
+                 self.transcriptChunks.removeAll { !$0.isFinal && $0.source == source }
 
-        switch type {
-        case "conversation.item.input_audio_transcription.delta":
-            if let delta = json["delta"] as? String {
-                DispatchQueue.main.async { [weak self] in
-                    guard let self = self else { return }
+                 let chunk = TranscriptChunk(
+                     timestamp: Date(),
+                     source: source,
+                     text: finalText,
+                     isFinal: true
+                 )
+                 self.transcriptChunks.append(chunk)
+                 self.currentInterim[source] = ""
+             }
 
-                    // Safely accumulate interim text for this source
-                    self.currentInterim[source, default: ""] += delta
-
-                    // Remove previous interim chunk from the same source (if any)
-                    if let lastIndex = self.transcriptChunks.lastIndex(where: { !$0.isFinal && $0.source == source }) {
-                        self.transcriptChunks.remove(at: lastIndex)
-                    }
-
-                    // Append updated interim chunk
-                    let chunk = TranscriptChunk(
-                        timestamp: Date(),
-                        source: source,
-                        text: self.currentInterim[source] ?? "",
-                        isFinal: false
-                    )
-                    self.transcriptChunks.append(chunk)
-
-                    // Track transcript activity for mic following
-                    self.activityTracker?.onTranscriptActivity()
-                }
-            }
-        case "conversation.item.input_audio_transcription.completed":
-            if let transcript = json["transcript"] as? String {
-                DispatchQueue.main.async { [weak self] in
-                    guard let self = self else { return }
-
-                    // Remove any interim chunks for this source
-                    self.transcriptChunks.removeAll { !$0.isFinal && $0.source == source }
-
-                    // Append final chunk
-                    let chunk = TranscriptChunk(
-                        timestamp: Date(),
-                        source: source,
-                        text: transcript,
-                        isFinal: true
-                    )
-                    self.transcriptChunks.append(chunk)
-
-                    // Track transcript activity for mic following
-                    self.activityTracker?.onTranscriptActivity()
-
-                    // Reset interim for this source
-                    self.currentInterim[source] = ""
-                }
-            }
-        case "conversation.item.input_audio_transcription.failed":
-            if let itemId = json["item_id"] as? String {
-                print("❌ Transcription failed for item: \(itemId)")
-                let errorMessage = "Audio transcription failed for item: \(itemId)\n\nNote: This error typically occurs when your OpenAI account has insufficient funds. Please check your account balance and add credits if needed."
-                DispatchQueue.main.async {
-                    self.errorMessage = errorMessage
-                    // Stop recording when transcription errors occur
-                    if self.isRecording {
-                        self.stopRecording()
-                    }
-                }
-            }
-        case "error":
-            // This case is now handled by the early error handling above.
-            // If we reach here, it means the error was not caught by the early check.
-            // We can add specific handling for this case if needed, but for now,
-            // the early error handling covers it.
+        case "AudioAdded":
+            // Ack
             break
-        case "session.updated", "session.created":
-            // Log session events for debugging
-            print("📋 Session event (\(source)): \(type)")
-        case "response.done", "response.created":
-            // Log response events for debugging (these don't contain transcription data)
-            print("🔄 Response event (\(source)): \(type)")
-        case "rate_limits.updated":
-            // Log rate limit updates
-            if let rateLimits = json["rate_limits"] as? [[String: Any]] {
-                for limit in rateLimits {
-                    if let name = limit["name"] as? String,
-                       let remaining = limit["remaining"] as? Int,
-                       let total = limit["limit"] as? Int {
-                        print("📊 Rate limit (\(source)) - \(name): \(remaining)/\(total)")
 
-                        // Warn when approaching limits
-                        if name == "tokens" && remaining < 1000 {
-                            print("⚠️ Warning: Low token balance remaining: \(remaining)")
-                        }
-                    }
-                }
-            }
+        case "Error":
+             if let type = json["type"] as? String, let reason = json["reason"] as? String {
+                 print("❌ Speechmatics Error: \(type) - \(reason)")
+                 let errorMessage = "Transcription Error: \(reason)"
+                 DispatchQueue.main.async {
+                     self.errorMessage = errorMessage
+                 }
+             }
+
         default:
-            break
+            print("Unknown Speechmatics message: \(messageType)")
+        }
+    }
+
+
+
+    private func sendMessage(_ message: [String: Any], source: AudioSource) {
+        let task: URLSessionWebSocketTask? = (source == .mic) ? micSocketTask : systemSocketTask
+        guard let socket = task, socket.state == .running else { return }
+
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: message)
+            if let jsonStr = String(data: jsonData, encoding: .utf8) {
+                socket.send(.string(jsonStr)) { error in
+                    if let error = error {
+                        print("❌ Failed to send message: \(error)")
+                    }
+                }
+            }
+        } catch {
+             print("❌ Failed to serialize message")
         }
     }
 
@@ -976,435 +954,27 @@ class AudioManager: NSObject, ObservableObject {
 
         guard let socket = task, socket.state == .running else { return }
 
-        let base64 = data.base64EncodedString()
-        let message: [String: Any] = ["type": "input_audio_buffer.append", "audio": base64]
-
+        // Speechmatics accepts raw binary messages
         let thisSession = self.sessionID
-        do {
-            let jsonData = try JSONSerialization.data(withJSONObject: message)
-            if let jsonStr = String(data: jsonData, encoding: .utf8) {
-                socket.send(.string(jsonStr)) { [weak self] error in
-                    if let error = error {
-                        guard let self = self, self.sessionID == thisSession else { return }
 
-                        // Ignore cancellation errors, which are expected when stopping recording.
-                        if (error as? URLError)?.code == .cancelled {
-                            return
-                        }
-                        print("❌ Send error (\(source)): \(error)")
-                    }
-                }
-            }
-        } catch {
-            print("❌ JSON send error")
+        // Just send the data
+        socket.send(.data(data)) { [weak self] error in
+             if let error = error {
+                 guard let self = self, self.sessionID == thisSession else { return }
+
+                 // Ignore cancellation errors
+                 if (error as? URLError)?.code == .cancelled {
+                     return
+                 }
+                 print("❌ Send error (\(source)): \(error)")
+             }
         }
     }
+
+    // MARK: - Helper Methods
 
     private func handleAudioEngineConfigurationChange() {
-        print("🔔 Audio engine configuration changed - restarting mic")
+        print("� Audio engine configuration changed - restarting mic")
         restartMicrophone()
-    }
-
-    // MARK: - Auto-Recording Methods
-
-    /// Enable automatic recording when other apps use audio
-    /// Note: Monitoring will start only after the first recording session
-    /// to avoid requesting system audio permissions prematurely
-    func enableAutoRecording() {
-        guard !isAutoRecordingEnabled else {
-            print("ℹ️ Auto-recording already enabled")
-            return
-        }
-
-        print("🎯 Enabling auto-recording...")
-        isAutoRecordingEnabled = true
-
-        // Create monitor but don't start it yet
-        audioMonitor = SystemAudioMonitor()
-        audioMonitor?.onAudioStateChanged = { [weak self] state in
-            Task { @MainActor in
-                self?.handleSystemAudioStateChange(state)
-            }
-        }
-
-        print("✅ Auto-recording enabled - monitoring will start after first recording")
-    }
-
-    /// Start system audio monitoring (called after first recording begins)
-    private func startAudioMonitoringIfNeeded() {
-        guard isAutoRecordingEnabled, let monitor = audioMonitor else { return }
-
-        // Check if already monitoring
-        guard !monitor.isMonitoring else { return }
-
-        print("🎧 Starting audio state monitoring...")
-        do {
-            try monitor.startMonitoring()
-            print("✅ Audio monitoring active - will detect when other apps use audio")
-        } catch {
-            print("❌ Failed to start monitoring: \(error)")
-            errorMessage = "Failed to start audio monitoring: \(error.localizedDescription)"
-        }
-    }
-
-    /// Disable automatic recording
-    func disableAutoRecording() {
-        guard isAutoRecordingEnabled else {
-            print("ℹ️ Auto-recording already disabled")
-            return
-        }
-
-        print("🛑 Disabling auto-recording...")
-
-        // Stop monitoring
-        audioMonitor?.stopMonitoring()
-        audioMonitor = nil
-
-        // Cancel any pending timers
-        autoStartDelay?.invalidate()
-        autoStartDelay = nil
-        autoStopDelay?.invalidate()
-        autoStopDelay = nil
-
-        isAutoRecordingEnabled = false
-        print("✅ Auto-recording disabled")
-    }
-
-    /// Handle system audio state changes
-    private func handleSystemAudioStateChange(_ state: SystemAudioMonitor.AudioState) {
-        switch state {
-        case .active:
-            // Another app started using audio
-            handleOtherAppStartedAudio()
-        case .inactive:
-            // Other apps stopped using audio
-            handleOtherAppStoppedAudio()
-        }
-    }
-
-    /// When another app starts using audio → Start recording after brief delay
-    private func handleOtherAppStartedAudio() {
-        print("🎵 Detected: Another app is using audio")
-
-        // Cancel any pending stop
-        autoStopDelay?.invalidate()
-        autoStopDelay = nil
-
-        // If already recording, do nothing
-        guard !isRecording else {
-            print("ℹ️ Already recording")
-            return
-        }
-
-        // Start recording after brief delay to avoid false positives
-        print("⏱️ Will start recording in \(startDelayTime)s...")
-        autoStartDelay?.invalidate()
-        autoStartDelay = Timer.scheduledTimer(withTimeInterval: startDelayTime, repeats: false) { [weak self] _ in
-            guard let self = self, self.isAutoRecordingEnabled else { return }
-
-            // Double-check audio is still active
-            if self.audioMonitor?.audioState == .active && !self.isRecording {
-                print("🎙️ Auto-starting recording...")
-                self.startRecording()
-            }
-        }
-    }
-
-    /// When other apps stop using audio → Stop recording after delay
-    private func handleOtherAppStoppedAudio() {
-        print("🔇 Detected: Other apps stopped using audio")
-
-        // Cancel any pending start
-        autoStartDelay?.invalidate()
-        autoStartDelay = nil
-
-        // If not recording, do nothing
-        guard isRecording else {
-            print("ℹ️ Not recording")
-            return
-        }
-
-        // Stop recording after delay
-        print("⏱️ Will stop recording in \(stopDelayTime)s...")
-        autoStopDelay?.invalidate()
-        autoStopDelay = Timer.scheduledTimer(withTimeInterval: stopDelayTime, repeats: false) { [weak self] _ in
-            guard let self = self, self.isAutoRecordingEnabled else { return }
-
-            // Double-check audio is still inactive
-            if self.audioMonitor?.audioState == .inactive && self.isRecording {
-                print("⏹️ Auto-stopping recording...")
-                self.stopRecording()
-            }
-        }
-    }
-
-    // MARK: - Mic Following Methods
-
-    /// Enable mic following mode - record only when other apps are using the microphone
-    func enableMicFollowing() {
-        guard !isMicFollowingEnabled else {
-            print("ℹ️ Mic following already enabled")
-            return
-        }
-
-        print("🎯 Enabling mic following mode...")
-        isMicFollowingEnabled = true
-
-        // Create and start mic monitor
-        micMonitor = MicUsageMonitor()
-        micMonitor?.onMicStateChanged = { [weak self] state in
-            Task { @MainActor in
-                self?.handleMicUsageStateChange(state)
-            }
-        }
-
-        do {
-            try micMonitor?.startMonitoring()
-            print("✅ Mic following enabled - will record when other apps use microphone")
-        } catch {
-            print("❌ Failed to start mic monitoring: \(error)")
-            errorMessage = "Failed to enable mic following: \(error.localizedDescription)"
-            isMicFollowingEnabled = false
-            micMonitor = nil
-        }
-    }
-
-    /// Disable mic following mode
-    func disableMicFollowing() {
-        guard isMicFollowingEnabled else {
-            print("ℹ️ Mic following already disabled")
-            return
-        }
-
-        print("🛑 Disabling mic following mode...")
-
-        // Stop monitoring
-        micMonitor?.stopMonitoring()
-        micMonitor = nil
-
-        // Cancel any pending timers
-        micFollowStartDelay?.invalidate()
-        micFollowStartDelay = nil
-        stopSilenceProbeTimer()
-
-        // Cleanup activity tracker
-        activityTracker = nil
-
-        // Stop recording if active and due to mic following
-        if isRecording && isRecordingDueToMicFollowing {
-            print("⏹️ Stopping recording due to mic following disable")
-            isRecordingDueToMicFollowing = false
-            stopRecording()
-        }
-
-        isMicFollowingEnabled = false
-        print("✅ Mic following disabled")
-    }
-
-    /// Handle microphone usage state changes
-    private func handleMicUsageStateChange(_ state: MicUsageMonitor.MicState) {
-        switch state {
-        case .active:
-            // Another app started using the microphone
-            handleOtherAppStartedMic()
-        case .inactive:
-            // Other apps stopped using the microphone
-            handleOtherAppStoppedMic()
-        }
-    }
-
-    /// When another app starts using the mic → Start recording after brief delay
-    private func handleOtherAppStartedMic() {
-        print("🎤 Detected: Another app is using the microphone")
-
-        // Cancel any pending stop
-        micFollowStopDelay?.invalidate()
-        micFollowStopDelay = nil
-
-        // If already recording, do nothing
-        guard !isRecording else {
-            print("ℹ️ Already recording")
-            return
-        }
-
-        // Start recording after brief delay to avoid false positives
-        print("⏱️ Will start recording in \(micFollowStartDelayTime)s...")
-        micFollowStartDelay?.invalidate()
-        micFollowStartDelay = Timer.scheduledTimer(withTimeInterval: micFollowStartDelayTime, repeats: false) { [weak self] _ in
-            guard let self = self, self.isMicFollowingEnabled else { return }
-
-            // Double-check mic is still active
-            if self.micMonitor?.micState == .active && !self.isRecording {
-                print("🎙️ Auto-starting recording (mic following)...")
-                self.isRecordingDueToMicFollowing = true
-
-                // Create activity tracker
-                self.activityTracker = ActivityTracker()
-
-                // Create new transcription session for mic following
-                self.createMicFollowingSession()
-
-                self.startMicrophoneOnlyRecording()
-
-                // Start silence detection probe
-                self.startSilenceProbeTimer()
-            }
-        }
-    }
-
-    /// Start silence detection probe timer
-    private func startSilenceProbeTimer() {
-        silenceProbeTimer?.invalidate()
-
-        print("🔄 Starting silence detection probe...")
-        silenceProbeTimer = Timer.scheduledTimer(withTimeInterval: probeInterval, repeats: true) { [weak self] _ in
-            self?.probeForSilenceAndCheck()
-        }
-    }
-
-    /// Stop the silence probe timer
-    private func stopSilenceProbeTimer() {
-        silenceProbeTimer?.invalidate()
-        silenceProbeTimer = nil
-        print("🛑 Stopped silence detection probe")
-    }
-
-    /// Probe: Check for silence, then verify if other apps still using mic
-    private func probeForSilenceAndCheck() {
-        guard let monitor = micMonitor, let tracker = activityTracker else {
-            print("⚠️ Probe skipped: monitor or tracker nil")
-            return
-        }
-        guard isRecording && isRecordingDueToMicFollowing else {
-            print("⚠️ Probe skipped: not recording or not due to mic following")
-            return
-        }
-
-        // 1. Check if silent for configured window
-        let idleFor = tracker.secondsSinceLastActivity()
-        print("🔍 Probe check: idle for \(String(format: "%.1f", idleFor))s (threshold: \(silenceWindow)s)")
-
-        if idleFor < silenceWindow {
-            // Still active, continue recording
-            return
-        }
-
-        print("🔇 Silence detected for \(String(format: "%.1f", idleFor))s - probing...")
-
-        // 2. Completely stop our audio engine to clear mic usage
-        let wasRunning = audioEngine.isRunning
-        if wasRunning {
-            audioEngine.stop()
-            // Remove the tap to fully release the mic
-            audioEngine.inputNode.removeTap(onBus: 0)
-            print("⏸️ Stopped audio engine for probe")
-        }
-
-        // 3. After brief pause, check if anyone else still using mic
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-            guard let self = self else { return }
-
-            let someoneElseUsing = monitor.currentIsRunningSomewhere()
-            print("🔍 Probe result: someoneElseUsing = \(someoneElseUsing)")
-
-            if someoneElseUsing {
-                // Others still active -> restart recording
-                print("✅ Other apps still using mic, restarting recording")
-                if wasRunning {
-                    // Reinstall tap and restart
-                    self.startMicrophoneTap()
-                    // Reset activity tracker since we're continuing
-                    tracker.reset()
-                }
-            } else {
-                // No one else -> stop recording completely
-                print("⏹️ No other apps using mic - stopping recording")
-                self.stopMicFollowingRecording()
-            }
-        }
-    }
-
-    /// Stop recording and cleanup mic following state
-    private func stopMicFollowingRecording() {
-        // Save the session before stopping
-        saveMicFollowingSession()
-
-        stopSilenceProbeTimer()
-        activityTracker = nil
-        isRecordingDueToMicFollowing = false
-        currentMicFollowingSession = nil
-        stopRecording()
-    }
-
-    /// Create a new transcription session for mic following
-    private func createMicFollowingSession() {
-        let context = BrowserURLHelper.getCurrentContext()
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMM d, h:mm a"
-        let formattedDate = dateFormatter.string(from: Date())
-        
-        let title: String
-        if let contextName = context {
-            title = "\(contextName) - \(formattedDate)"
-        } else {
-            title = "Recording - \(formattedDate)"
-        }
-        
-        let session = TranscriptionSession(
-            date: Date(),
-            title: title,
-            source: .micFollowing
-        )
-        currentMicFollowingSession = session
-        print("📝 Created mic following session: \(session.id) - \(title)")
-    }
-
-    /// Save mic following session with captured transcripts
-    private func saveMicFollowingSession() {
-        guard var session = currentMicFollowingSession else {
-            print("⚠️ No mic following session to save")
-            return
-        }
-
-        // Add all final transcript chunks to the session
-        session.transcriptChunks = transcriptChunks.filter { $0.isFinal }
-
-        // Only save if there's actual content
-        guard !session.transcriptChunks.isEmpty else {
-            print("ℹ️ Skipping save - no transcript content")
-            return
-        }
-
-        print("💾 Saving mic following session with \(session.transcriptChunks.count) chunks")
-
-        // Calculate analytics for the session
-        if let firstChunk = session.transcriptChunks.first,
-           let lastChunk = session.transcriptChunks.last {
-            let durationSeconds = lastChunk.timestamp.timeIntervalSince(firstChunk.timestamp)
-            let durationMinutes = max(durationSeconds / 60.0, 0.1)
-
-            print("📊 Calculating analytics for mic following session")
-            if let analytics = AnalyticsCalculator.analyzeTranscript(
-                chunks: session.transcriptChunks,
-                durationMinutes: durationMinutes
-            ) {
-                session.analytics = analytics
-                print("✅ Analytics calculated - Clarity: \(analytics.scores.clarity), Conciseness: \(analytics.scores.conciseness), Confidence: \(analytics.scores.confidence)")
-            }
-        }
-
-        // Post notification to save the session
-        NotificationCenter.default.post(
-            name: NSNotification.Name("SaveTranscriptionSession"),
-            object: nil,
-            userInfo: ["session": session]
-        )
-    }
-
-    /// When other apps stop using the mic → No longer used with silence detection
-    private func handleOtherAppStoppedMic() {
-        // This method is called when mic monitor detects state change to inactive
-        // With silence detection, we don't rely on this - the probe handles stopping
-        print("ℹ️ Mic state changed to inactive (ignored in silence detection mode)")
     }
 }

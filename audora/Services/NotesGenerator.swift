@@ -1,8 +1,7 @@
 // NotesGenerator.swift
-// Handles AI-powered note generation using OpenAI
+// Handles AI-powered note generation via backend
 
 import Foundation
-import OpenAI
 
 /// Result type for note generation streaming
 enum GenerationResult {
@@ -10,12 +9,12 @@ enum GenerationResult {
     case error(String)
 }
 
-/// Generates meeting notes using OpenAI API
+/// Generates meeting notes using the backend AI service
 class NotesGenerator {
     static let shared = NotesGenerator()
-    
+
     private init() {}
-    
+
     /// Generates meeting notes from meeting data using template-based system prompt with streaming
     /// - Parameters:
     ///   - meeting: The meeting object containing all necessary data
@@ -27,34 +26,18 @@ class NotesGenerator {
                             userBlurb: String,
                             systemPrompt: String,
                             templateId: UUID? = nil) -> AsyncStream<GenerationResult> {
-        
+
         return AsyncStream<GenerationResult>(GenerationResult.self) { continuation in
             Task {
                 do {
-                    guard let apiKey = KeychainHelper.shared.getAPIKey(), !apiKey.isEmpty else {
-                        continuation.yield(.error(ErrorMessage.noAPIKey))
+                    // Check auth state
+                    let authState = await MainActor.run { ConvexService.shared.authState }
+                    guard case .authenticated = authState else {
+                        continuation.yield(.error("Please sign in to generate notes."))
                         continuation.finish()
                         return
                     }
-                    
-                    // Validate API key before proceeding
-                    let validationResult = await APIKeyValidator.shared.validateAPIKey(apiKey)
-                    switch validationResult {
-                    case .failure(let error):
-                        continuation.yield(.error(error.localizedDescription))
-                        continuation.finish()
-                        return
-                    case .success():
-                        break
-                    }
-                    
-                    let openAI = OpenAI(apiToken: apiKey)
-                    
-                    // Create date formatter for meeting date
-                    let dateFormatter = DateFormatter()
-                    dateFormatter.dateStyle = .full
-                    dateFormatter.timeStyle = .short
-                    
+
                     // Load template content
                     var templateContent = ""
                     if let templateId = templateId {
@@ -63,21 +46,26 @@ class NotesGenerator {
                             templateContent = template.formattedContent
                         }
                     }
-                    
+
                     // If no template content, use default
                     if templateContent.isEmpty {
                         continuation.yield(.error(ErrorMessage.noTemplate))
                         continuation.finish()
                         return
                     }
-                    
+
                     // Check if transcript is empty
                     if meeting.formattedTranscript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         continuation.yield(.error(ErrorMessage.noTranscript))
                         continuation.finish()
                         return
                     }
-                    
+
+                    // Create date formatter for meeting date
+                    let dateFormatter = DateFormatter()
+                    dateFormatter.dateStyle = .full
+                    dateFormatter.timeStyle = .short
+
                     // Prepare template variables
                     let templateVariables: [String: String] = [
                         "meeting_title": meeting.title.isEmpty ? "Untitled Meeting" : meeting.title,
@@ -87,23 +75,20 @@ class NotesGenerator {
                         "user_notes": meeting.userNotes,
                         "template_content": templateContent
                     ]
-                    
+
                     // Process the system prompt template
                     let systemContent = Settings.processTemplate(systemPrompt, with: templateVariables)
-                    let systemMessage = ChatQuery.ChatCompletionMessageParam(role: .system, content: systemContent)!
 
-                    print(systemContent)
-                
-                    let query = ChatQuery(messages: [systemMessage], model: .gpt4_1)
-                    
-                    let stream: AsyncThrowingStream<ChatStreamResult, Error> = openAI.chatsStream(query: query)
-                    
-                    for try await result in stream {
-                        if let content = result.choices.first?.delta.content {
-                            continuation.yield(.content(content))
-                        }
+                    // Use backend to generate notes
+                    let notesStream = await ConvexService.shared.generateNotes(
+                        transcript: meeting.formattedTranscript,
+                        templateId: templateId?.uuidString
+                    )
+
+                    for try await content in notesStream {
+                        continuation.yield(.content(content))
                     }
-                    
+
                     continuation.finish()
                 } catch {
                     let errorMessage = ErrorHandler.shared.handleError(error)
@@ -114,14 +99,15 @@ class NotesGenerator {
             }
         }
     }
-    
-    /// Validates if OpenAI API key is configured
-    /// - Returns: True if API key exists, false otherwise
+
+    /// Checks if notes generation is available (user is authenticated)
+    /// - Returns: True if user is authenticated, false otherwise
+    @MainActor
     func isConfigured() -> Bool {
-        guard let key = KeychainHelper.shared.getAPIKey(),
-              !key.isEmpty else {
-            return false
+        // Check if user is authenticated
+        if case .authenticated = ConvexService.shared.authState {
+            return true
         }
-        return true
+        return false
     }
-} 
+}

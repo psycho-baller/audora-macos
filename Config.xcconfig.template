@@ -1,0 +1,12 @@
+// Audora Configuration
+// Copy this file to Config.xcconfig and fill in your values
+// IMPORTANT: Do NOT commit Config.xcconfig to git
+
+// Clerk Authentication
+// Get from: https://dashboard.clerk.com → API Keys
+// You can use the same key for web and macOS
+CLERK_PUBLISHABLE_KEY = pk_live_YOUR_KEY_HERE
+
+// Convex Backend
+// Get from: https://dashboard.convex.dev → Your Project → Settings
+CONVEX_DEPLOYMENT_URL = https://your-app.convex.cloud

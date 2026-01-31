@@ -16,6 +16,18 @@ extension AudioObjectID {
     var isValid: Bool { !isUnknown }
 }
 
+
+extension String {
+    var fourCharCodeValue: UInt32 {
+        var result: UInt32 = 0
+        for scalar in self.unicodeScalars.prefix(4) {
+            result = (result << 8) + scalar.value
+        }
+        return result
+    }
+}
+
+
 // MARK: - Concrete Property Helpers
 
 extension AudioObjectID {
@@ -26,6 +38,10 @@ extension AudioObjectID {
 
     static func readProcessList() throws -> [AudioObjectID] {
         try AudioObjectID.system.readProcessList()
+    }
+
+    func readProcessIsRunning() -> Bool {
+        (try? readBool(kAudioProcessPropertyIsRunning)) ?? false
     }
 
     /// Reads `kAudioHardwarePropertyTranslatePIDToProcessObject` for the specific pid.
@@ -83,29 +99,48 @@ extension AudioObjectID {
         }
     }
 
-    func readProcessIsRunning() -> Bool {
-        (try? readBool(kAudioProcessPropertyIsRunning)) ?? false
+    func readProcessIsRunningInput() -> Bool {
+        (try? readBool(kAudioProcessPropertyIsRunningInput)) ?? false
     }
 
-    /*
-     public var kAudioProcessPropertyPID: AudioObjectPropertySelector { get }
+    // MARK: - Selectors
 
-     public var kAudioProcessPropertyBundleID: AudioObjectPropertySelector { get }
+    var kAudioProcessPropertyPID: AudioObjectPropertySelector {
+        "ppid".fourCharCodeValue
+    }
 
-     public var kAudioProcessPropertyDevices: AudioObjectPropertySelector { get }
+    var kAudioProcessPropertyBundleID: AudioObjectPropertySelector {
+        "pbid".fourCharCodeValue
+    }
 
-     public var kAudioProcessPropertyIsRunning: AudioObjectPropertySelector { get }
+    var kAudioProcessPropertyIsRunning: AudioObjectPropertySelector {
+        "prun".fourCharCodeValue
+    }
 
-     public var kAudioProcessPropertyIsRunningInput: AudioObjectPropertySelector { get }
+    var kAudioProcessPropertyIsRunningInput: AudioObjectPropertySelector {
+        "prin".fourCharCodeValue
+    }
 
-     public var kAudioProcessPropertyIsRunningOutput: AudioObjectPropertySelector { get }
-     */
+    var kAudioProcessPropertyIsRunningOutput: AudioObjectPropertySelector {
+        "pout".fourCharCodeValue
+    }
+
+    var kAudioTapPropertyFormat: AudioObjectPropertySelector {
+        "tfmt".fourCharCodeValue
+    }
 
     /// Reads the value for `kAudioHardwarePropertyDefaultSystemOutputDevice`, should only be called on the system object.
     func readDefaultSystemOutputDevice() throws -> AudioDeviceID {
         try requireSystemObject()
 
         return try read(kAudioHardwarePropertyDefaultSystemOutputDevice, defaultValue: AudioDeviceID.unknown)
+    }
+
+    /// Reads the value for `kAudioHardwarePropertyDefaultInputDevice`, should only be called on the system object.
+    func readDefaultInputDevice() throws -> AudioDeviceID {
+        try requireSystemObject()
+
+        return try read(kAudioHardwarePropertyDefaultInputDevice, defaultValue: AudioDeviceID.unknown)
     }
 
     /// Reads the value for `kAudioDevicePropertyDeviceUID` for the device represented by this audio object ID.
@@ -307,4 +342,4 @@ extension AudioObjectID {
     func getDeviceName() throws -> String {
         return try readString(kAudioDevicePropertyDeviceNameCFString)
     }
-} 
+}
