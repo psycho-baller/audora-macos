@@ -209,72 +209,72 @@ struct GeneralSettingsView: View {
                     }
                     
                     // Local model download option
-                    if viewModel.settings.modelSource == .local {
-                        Divider()
+                //     if viewModel.settings.modelSource == .local {
+                //         Divider()
                         
-                        // Filter and Sort LLM Models
-                        let llmModels = viewModel.availableModels
-                            .filter { $0.compatibleFrameworks.contains(.llamaCpp) }
-                            .sorted { ($0.memoryRequired ?? 0) < ($1.memoryRequired ?? 0) }
+                //         // Filter and Sort LLM Models
+                //         let llmModels = viewModel.availableModels
+                //             .filter { $0.compatibleFrameworks.contains(.llamaCpp) }
+                //             .sorted { ($0.memoryRequired ?? 0) < ($1.memoryRequired ?? 0) }
 
-                        VStack(alignment: .leading, spacing: 16) {
-                            if !llmModels.isEmpty {
-                                Text("LLM Models")
-                                    .font(.subheadline)
-                                    .foregroundColor(.primary)
+                //         VStack(alignment: .leading, spacing: 16) {
+                //             if !llmModels.isEmpty {
+                //                 Text("LLM Models")
+                //                     .font(.subheadline)
+                //                     .foregroundColor(.primary)
                                 
-                                VStack(spacing: 8) {
-                                    ForEach(llmModels, id: \.id) { model in
-                                        HStack {
-                                            Text(model.name)
-                                                .frame(maxWidth: .infinity, alignment: .leading)
+                //                 VStack(spacing: 8) {
+                //                     ForEach(llmModels, id: \.id) { model in
+                //                         HStack {
+                //                             Text(model.name)
+                //                                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                                            Spacer()
+                //                             Spacer()
 
-                                            HStack(spacing: 12) {
-                                                if viewModel.loadedModel == model.id {
-                                                    Text("Loaded")
-                                                        .foregroundColor(.green)
-                                                        .bold()
-                                                        .frame(width: 80, height: 32)
-                                                        .cornerRadius(6)
-                                                        .multilineTextAlignment(.center)
-                                                } else if viewModel.downloadedModels.contains(model.id) {
-                                                    Button("Load") {
-                                                        Task { try await viewModel.loadModel(model) }
-                                                    }
-                                                    .buttonStyle(.borderedProminent)
-                                                    .frame(width: 80, height: 32)
-                                                } else {
-                                                    Button("Download") {
-                                                        Task { await viewModel.downloadModel(model) }
-                                                    }
-                                                    .buttonStyle(.bordered)
-                                                    .frame(width: 80, height: 32)
-                                                }
+                //                             HStack(spacing: 12) {
+                //                                 if viewModel.loadedModel == model.id {
+                //                                     Text("Loaded")
+                //                                         .foregroundColor(.green)
+                //                                         .bold()
+                //                                         .frame(width: 80, height: 32)
+                //                                         .cornerRadius(6)
+                //                                         .multilineTextAlignment(.center)
+                //                                 } else if viewModel.downloadedModels.contains(model.id) {
+                //                                     Button("Load") {
+                //                                         Task { try await viewModel.loadModel(model) }
+                //                                     }
+                //                                     .buttonStyle(.borderedProminent)
+                //                                     .frame(width: 80, height: 32)
+                //                                 } else {
+                //                                     Button("Download") {
+                //                                         Task { await viewModel.downloadModel(model) }
+                //                                     }
+                //                                     .buttonStyle(.bordered)
+                //                                     .frame(width: 80, height: 32)
+                //                                 }
 
-                                                Button(role: .destructive) {
-                                                    Task { await viewModel.deleteModel(model) }
-                                                } label: {
-                                                    Image(systemName: "trash")
-                                                        .foregroundColor(.red)
-                                                }
-                                                .buttonStyle(.plain)
-                                            }
-                                        }
-                                        .padding()
-                                        .background(
-                                            RoundedRectangle(cornerRadius: 8)
-                                                .stroke(Color.gray.opacity(0.3))
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                        .task {
-                            await viewModel.fetchAvailableModels()
-                        }
-                    }
+                //                                 Button(role: .destructive) {
+                //                                     Task { await viewModel.deleteModel(model) }
+                //                                 } label: {
+                //                                     Image(systemName: "trash")
+                //                                         .foregroundColor(.red)
+                //                                 }
+                //                                 .buttonStyle(.plain)
+                //                             }
+                //                         }
+                //                         .padding()
+                //                         .background(
+                //                             RoundedRectangle(cornerRadius: 8)
+                //                                 .stroke(Color.gray.opacity(0.3))
+                //                         )
+                //                     }
+                //                 }
+                //             }
+                //         }
+                //         .task {
+                //             await viewModel.fetchAvailableModels()
+                //         }
+                //     }
                 }
                 .padding()
                 .background(Color(NSColor.controlBackgroundColor))
