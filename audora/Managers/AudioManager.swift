@@ -24,7 +24,6 @@ class AudioManager: NSObject, ObservableObject {
     private var systemSocketTask: URLSessionWebSocketTask?
     private let speechmaticsURL = URL(string: "wss://eu2.rt.speechmatics.com/v2/en")!
 
-
     // Unique identifier for the current recording session
     private var sessionID = UUID()
 
@@ -92,7 +91,7 @@ class AudioManager: NSObject, ObservableObject {
         // macOS: Use Core Audio to check the default output device
         do {
             // Get the default output device
-            let defaultOutputID = try AudioDeviceID.readDefaultSystemOutputDevice()
+            let defaultOutputID: AudioDeviceID = try AudioDeviceID.readDefaultSystemOutputDevice()
 
             // Check the device's transport type
             var address = AudioObjectPropertyAddress(

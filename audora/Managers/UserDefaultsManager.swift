@@ -30,6 +30,9 @@ class UserDefaultsManager {
         static let launchAtLogin = "launchAtLogin"
         static let notifyScheduledMeetings = "notifyScheduledMeetings"
         static let realtimeFeedbackEnabled = "realtimeFeedbackEnabled"
+
+        static let modelSource = "modelSource"
+        static let loadedModel = "loadedModel"
     }
 
     // MARK: - User Blurb
@@ -139,5 +142,31 @@ class UserDefaultsManager {
     var realtimeFeedbackEnabled: Bool {
         get { userDefaults.object(forKey: Keys.realtimeFeedbackEnabled) as? Bool ?? false }
         set { userDefaults.set(newValue, forKey: Keys.realtimeFeedbackEnabled) }
+    }
+
+    var modelSource: ModelSource {
+        get {
+            guard
+                let raw = UserDefaults.standard.string(forKey: Keys.modelSource),
+                let source = ModelSource(rawValue: raw)
+            else {
+                return .openAI // safe default for existing users
+            }
+            return source
+        }
+        set {
+            UserDefaults.standard.set(newValue.rawValue, forKey: Keys.modelSource)
+        }
+    }
+    
+    var loadedModel: String? {
+        get { userDefaults.string(forKey: Keys.loadedModel) }
+        set {
+            if let value = newValue {
+                userDefaults.set(value, forKey: Keys.loadedModel)
+            } else {
+                userDefaults.removeObject(forKey: Keys.loadedModel)
+            }
+        }
     }
 }

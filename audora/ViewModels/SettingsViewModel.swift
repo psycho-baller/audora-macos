@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 import PostHog
 import EventKit
+import RunAnywhere
 
 class SettingsViewModel: ObservableObject {
     @Published var settings = Settings()
@@ -10,8 +11,14 @@ class SettingsViewModel: ObservableObject {
     @Published var templates: [NoteTemplate] = []
     @Published var calendars: [EKCalendar] = []
 
+    @Published var availableModels: [ModelInfo] = []
+    @Published var downloadedModels: Set<String> = []
+    
+    @Published var loadedModel: String? = nil
+
     init() {
         loadTemplates()
+        loadedModel = settings.loadedModel
 
         // Load calendars if authorized
         if CalendarManager.shared.authorizationStatus == .authorized {
@@ -48,6 +55,58 @@ class SettingsViewModel: ObservableObject {
                 // Fallback to first available template
                 settings.selectedTemplateId = firstTemplate.id
             }
+        }
+    }
+
+    func fetchAvailableModels() async {
+        do {
+            print("Fetching available models...")
+            availableModels = try await RunAnywhere.availableModels()
+            
+            downloadedModels = Set(
+                availableModels
+                    .filter { $0.localPath != nil }
+                    .map(\.id)
+            )
+        } catch {
+            print("Failed to fetch models: \(error)")
+        }
+    }
+    
+    func downloadModel(_ model: ModelInfo) async {
+        do {
+            print("Downloading model: \(model.id)")
+            try await RunAnywhere.downloadModel(model.id)
+            downloadedModels.insert(model.id)
+        } catch {
+            print("Failed to download model: \(error)")
+        }
+    }
+
+    func loadModel(_ model: ModelInfo) async {
+        do {
+            print("Loading model: \(model.id)")
+            try await RunAnywhere.loadModel(model.id)
+            
+            loadedModel = model.id
+            settings.loadedModel = model.id
+        } catch {
+            print("Failed to load model: \(error)")
+        }
+    }
+
+    func deleteModel(_ model: ModelInfo) async {
+        do {
+            print("Deleting model: \(model.id)")
+            try await RunAnywhere.deleteModel(model.id)
+            downloadedModels.remove(model.id)
+            
+            if loadedModel == model.id {
+                loadedModel = nil
+                settings.loadedModel = nil
+            }
+        } catch {
+            print("Failed to delete model: \(error)")
         }
     }
 

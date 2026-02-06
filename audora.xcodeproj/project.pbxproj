@@ -9,6 +9,10 @@
 /* Begin PBXBuildFile section */
 		25E42AB42F12423000067344 /* ConvexClerk in Frameworks */ = {isa = PBXBuildFile; productRef = 25E42AB32F12423000067344 /* ConvexClerk */; };
 		25E42AB62F1249FC00067344 /* Config.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 25E42AB52F1249FB00067344 /* Config.xcconfig */; };
+		915F06DE2F3559BD0078084B /* FluidAudioDiarization in Frameworks */ = {isa = PBXBuildFile; productRef = 915F06DD2F3559BD0078084B /* FluidAudioDiarization */; };
+		915F06E02F3559BD0078084B /* LLMSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 915F06DF2F3559BD0078084B /* LLMSwift */; };
+		915F06E22F3559BD0078084B /* RunAnywhere in Frameworks */ = {isa = PBXBuildFile; productRef = 915F06E12F3559BD0078084B /* RunAnywhere */; };
+		915F06E42F3559BD0078084B /* WhisperKitTranscription in Frameworks */ = {isa = PBXBuildFile; productRef = 915F06E32F3559BD0078084B /* WhisperKitTranscription */; };
 		C56DE0BE2EF38F5E00AB086D /* ConvexMobile in Frameworks */ = {isa = PBXBuildFile; productRef = C56DE0BD2EF38F5E00AB086D /* ConvexMobile */; };
 		CC5718382E2020490042BA88 /* OpenAI in Frameworks */ = {isa = PBXBuildFile; productRef = CC5718372E2020490042BA88 /* OpenAI */; };
 		CCBA53E72E212F1C00469D84 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = CCBA53E62E212F1C00469D84 /* Sparkle */; };
@@ -33,9 +37,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				915F06E42F3559BD0078084B /* WhisperKitTranscription in Frameworks */,
 				CCC33F812E236B6F00EDE382 /* PostHog in Frameworks */,
 				CC5718382E2020490042BA88 /* OpenAI in Frameworks */,
 				CCBA53E72E212F1C00469D84 /* Sparkle in Frameworks */,
+				915F06E22F3559BD0078084B /* RunAnywhere in Frameworks */,
+				915F06E02F3559BD0078084B /* LLMSwift in Frameworks */,
+				915F06DE2F3559BD0078084B /* FluidAudioDiarization in Frameworks */,
 				C56DE0BE2EF38F5E00AB086D /* ConvexMobile in Frameworks */,
 				25E42AB42F12423000067344 /* ConvexClerk in Frameworks */,
 			);
@@ -94,6 +102,10 @@
 				CCC33F802E236B6F00EDE382 /* PostHog */,
 				C56DE0BD2EF38F5E00AB086D /* ConvexMobile */,
 				25E42AB32F12423000067344 /* ConvexClerk */,
+				915F06DD2F3559BD0078084B /* FluidAudioDiarization */,
+				915F06DF2F3559BD0078084B /* LLMSwift */,
+				915F06E12F3559BD0078084B /* RunAnywhere */,
+				915F06E32F3559BD0078084B /* WhisperKitTranscription */,
 			);
 			productName = audora;
 			productReference = CC5718182E201D8D0042BA88 /* audora.app */;
@@ -129,6 +141,7 @@
 				CCC33F7F2E236B6F00EDE382 /* XCRemoteSwiftPackageReference "posthog-ios" */,
 				C56DE0BC2EF38F5E00AB086D /* XCRemoteSwiftPackageReference "convex-swift" */,
 				25E42AB22F12423000067344 /* XCRemoteSwiftPackageReference "convex-swift-clerk" */,
+				915F06DC2F3559BD0078084B /* XCLocalSwiftPackageReference "../../runanywhere-sdks" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CC5718192E201D8D0042BA88 /* Products */;
@@ -296,7 +309,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"audora/Preview Content\"";
-				DEVELOPMENT_TEAM = 3V2UU7RRK9;
+				DEVELOPMENT_TEAM = 76D66BK4Y3;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -333,7 +346,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"audora/Preview Content\"";
-				DEVELOPMENT_TEAM = 3V2UU7RRK9;
+				DEVELOPMENT_TEAM = 76D66BK4Y3;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -379,6 +392,13 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		915F06DC2F3559BD0078084B /* XCLocalSwiftPackageReference "../../runanywhere-sdks" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../../runanywhere-sdks";
+		};
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
 		25E42AB22F12423000067344 /* XCRemoteSwiftPackageReference "convex-swift-clerk" */ = {
@@ -428,6 +448,22 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 25E42AB22F12423000067344 /* XCRemoteSwiftPackageReference "convex-swift-clerk" */;
 			productName = ConvexClerk;
+		};
+		915F06DD2F3559BD0078084B /* FluidAudioDiarization */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FluidAudioDiarization;
+		};
+		915F06DF2F3559BD0078084B /* LLMSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LLMSwift;
+		};
+		915F06E12F3559BD0078084B /* RunAnywhere */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RunAnywhere;
+		};
+		915F06E32F3559BD0078084B /* WhisperKitTranscription */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = WhisperKitTranscription;
 		};
 		C56DE0BD2EF38F5E00AB086D /* ConvexMobile */ = {
 			isa = XCSwiftPackageProductDependency;
