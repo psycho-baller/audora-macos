@@ -19,6 +19,13 @@ class CalendarManager: ObservableObject {
     }
 
     func requestAccess(completion: @escaping (Bool, Error?) -> Void) {
+        let status = CalendarManager.shared.authorizationStatus
+        if status == .denied || status == .restricted {
+            let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars")!
+            NSWorkspace.shared.open(url)
+            return
+        }
+        
         eventStore.requestAccess(to: .event) { [weak self] granted, error in
             DispatchQueue.main.async {
                 self?.updateAuthorizationStatus()

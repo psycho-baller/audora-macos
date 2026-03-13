@@ -61,7 +61,10 @@ struct AudoraApp: App {
         // Start meeting app detection
         MeetingAppDetector.shared.startMonitoring()
         MeetingAppDetector.shared.onOpenSettings = {}
-
+        
+        // Detect and store upcoming events
+        CalendarPersistenceManager.shared.activate()
+        
         // Initialize managers
         _ = NotificationManager.shared
     }
