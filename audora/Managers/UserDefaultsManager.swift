@@ -30,6 +30,10 @@ class UserDefaultsManager {
         static let launchAtLogin = "launchAtLogin"
         static let notifyScheduledMeetings = "notifyScheduledMeetings"
         static let realtimeFeedbackEnabled = "realtimeFeedbackEnabled"
+        static let writingAwarenessEnabled = "writingAwarenessEnabled"
+        static let subtleVocabularyRewardsEnabled = "subtleVocabularyRewardsEnabled"
+        static let showWritingSummaryInMenuBar = "showWritingSummaryInMenuBar"
+        static let writingLensClipboardFallbackEnabled = "writingLensClipboardFallbackEnabled"
     }
 
     // MARK: - User Blurb
@@ -139,5 +143,25 @@ class UserDefaultsManager {
     var realtimeFeedbackEnabled: Bool {
         get { userDefaults.object(forKey: Keys.realtimeFeedbackEnabled) as? Bool ?? false }
         set { userDefaults.set(newValue, forKey: Keys.realtimeFeedbackEnabled) }
+    }
+
+    var writingAwarenessEnabled: Bool {
+        get { userDefaults.object(forKey: Keys.writingAwarenessEnabled) as? Bool ?? true }
+        set { userDefaults.set(newValue, forKey: Keys.writingAwarenessEnabled) }
+    }
+
+    var subtleVocabularyRewardsEnabled: Bool {
+        get { userDefaults.object(forKey: Keys.subtleVocabularyRewardsEnabled) as? Bool ?? true }
+        set { userDefaults.set(newValue, forKey: Keys.subtleVocabularyRewardsEnabled) }
+    }
+
+    var showWritingSummaryInMenuBar: Bool {
+        get { userDefaults.object(forKey: Keys.showWritingSummaryInMenuBar) as? Bool ?? true }
+        set { userDefaults.set(newValue, forKey: Keys.showWritingSummaryInMenuBar) }
+    }
+
+    var writingLensClipboardFallbackEnabled: Bool {
+        get { userDefaults.object(forKey: Keys.writingLensClipboardFallbackEnabled) as? Bool ?? true }
+        set { userDefaults.set(newValue, forKey: Keys.writingLensClipboardFallbackEnabled) }
     }
 }

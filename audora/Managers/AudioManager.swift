@@ -42,6 +42,7 @@ class AudioManager: NSObject, ObservableObject {
 
     // Add current interim transcripts per source
     private var currentInterim: [AudioSource: String] = [.mic: "", .system: ""]
+    private var currentWords: [AudioSource: [WordTiming]] = [:]
 
     // Add ping timers to keep WebSocket connections alive
     private var pingTimers: [AudioSource: Timer] = [:]
@@ -698,7 +699,7 @@ class AudioManager: NSObject, ObservableObject {
             "transcription_config": [
                 "language": "en",
                 "enable_partials": true,
-                "max_delay": 2
+                "max_delay": 0.1
             ]
         ]
 
@@ -823,6 +824,8 @@ class AudioManager: NSObject, ObservableObject {
 
 
 
+
+
     private func parseRealtimeEvent(_ text: String, source: AudioSource) {
         // Parse JSON message
         guard let data = text.data(using: .utf8),
@@ -833,49 +836,49 @@ class AudioManager: NSObject, ObservableObject {
         switch messageType {
         case "AddTranscript":
             // Handle transcriptions
-            guard let metadata = json["metadata"] as? [String: Any],
-                  let results = json["results"] as? [[String: Any]] else { return }
+            guard let results = json["results"] as? [[String: Any]] else { return }
 
             var transcriptBuffer = ""
-            var isFinal = false
-
-            // Check if this is a final transcript (Speechmatics default is partial unless finalized)
-            // Actually Speechmatics V2 sends 'AddTranscript' for both.
-            // We use 'is_approximate' or similar fields if available, but usually V2 results are additive/corrections.
-            // Simplified: If 'transcript' field exists in metadata, use it? No.
-            // Iterate results.
+            var newWords: [WordTiming] = []
 
             for result in results {
-                if let alternatives = result["alternatives"] as? [[String: Any]],
-                   let firstAlt = alternatives.first,
-                   let content = firstAlt["content"] as? String {
-                     transcriptBuffer += content + " "
+                guard let type = result["type"] as? String,
+                      let alternatives = result["alternatives"] as? [[String: Any]],
+                      let firstAlt = alternatives.first,
+                      let content = firstAlt["content"] as? String else { continue }
+
+                if type == "word" {
+                    transcriptBuffer += " " + content
+
+                    if let startTime = result["start_time"] as? Double,
+                       let endTime = result["end_time"] as? Double {
+                         let wordId = UUID().uuidString // Generate a unique ID for the word
+                         newWords.append(WordTiming(word: content, startTime: startTime, endTime: endTime, wordId: wordId))
+                    }
+                } else if type == "punctuation" {
+                    transcriptBuffer += content
                 }
             }
 
             // Cleanup buffer
-            transcriptBuffer = transcriptBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
-            if transcriptBuffer.isEmpty { return }
-
-            // Speechmatics V2 sends finalized results when "is_eos" is true?
-            // Or look at 'type' in results?
-            // For now, treat all AddTranscript as partials updating the current view,
-            // unless we determine it's a stabilized segment.
-            // To properly match OpenAI's 'delta' vs 'completed', we'd need to track sequence numbers.
-            // For simplicity in this migration: treating as STREAMING updates.
+            if transcriptBuffer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return }
 
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
 
-                // For Speechmatics, AddTranscript usually contains new words.
-                // However, without complex logic, we might just append?
-                // Actually, 'results' contains a list of words.
+                // Update current state
+                let previousText = self.currentInterim[source] ?? ""
+                // Avoid double space issue if previous text ended with space or is empty
+                let spacer = (previousText.isEmpty || previousText.hasSuffix(" ") || transcriptBuffer.hasPrefix(" ")) ? "" : " "
 
-                // Let's assume we treat it as an update to the current "Interim"
-                self.currentInterim[source] = (self.currentInterim[source] ?? "") + " " + transcriptBuffer
+                self.currentInterim[source] = previousText + spacer + transcriptBuffer
+
+                if self.currentWords[source] == nil {
+                    self.currentWords[source] = []
+                }
+                self.currentWords[source]?.append(contentsOf: newWords)
 
                 // Update the UI chunk (marking as interim)
-
                 // Remove previous interim chunk
                 if let lastIndex = self.transcriptChunks.lastIndex(where: { !$0.isFinal && $0.source == source }) {
                     self.transcriptChunks.remove(at: lastIndex)
@@ -885,7 +888,8 @@ class AudioManager: NSObject, ObservableObject {
                     timestamp: Date(),
                     source: source,
                     text: self.currentInterim[source] ?? "",
-                    isFinal: false // Keep it false until EndOfTranscript or explicit finalization logic
+                    isFinal: false,
+                    words: self.currentWords[source]
                 )
                 self.transcriptChunks.append(chunk)
             }
@@ -896,6 +900,11 @@ class AudioManager: NSObject, ObservableObject {
                  guard let self = self else { return }
 
                  let finalText = self.currentInterim[source] ?? ""
+                 let finalWords = self.currentWords[source]
+
+                 self.currentInterim[source] = ""
+                 self.currentWords[source] = []
+
                  if finalText.isEmpty { return }
 
                  // Remove interim
@@ -905,10 +914,10 @@ class AudioManager: NSObject, ObservableObject {
                      timestamp: Date(),
                      source: source,
                      text: finalText,
-                     isFinal: true
+                     isFinal: true,
+                     words: finalWords
                  )
                  self.transcriptChunks.append(chunk)
-                 self.currentInterim[source] = ""
              }
 
         case "AudioAdded":

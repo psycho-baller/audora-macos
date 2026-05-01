@@ -3,7 +3,7 @@ import AVFoundation
 
 struct OnboardingView: View {
     @ObservedObject var settingsViewModel: SettingsViewModel
-    @State private var apiKey = ""
+    @ObservedObject private var convexService = ConvexService.shared
     @State private var hasAcceptedTerms = false
     @State private var micPermissionGranted = false
     @State private var systemAudioPermissionGranted = false
@@ -47,39 +47,6 @@ struct OnboardingView: View {
                                     isGranted: calendarPermissionGranted,
                                     action: requestCalendarPermission
                                 )
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                        // API Key Section
-                        VStack(alignment: .leading, spacing: 8) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("OpenAI API Key")
-                                    .font(.title2)
-                                    .fontWeight(.semibold)
-
-                                Text("Uses gpt-4o-mini-transcribe and gpt-4.1. Typical cost is ~$0.20/hour. Your Mac communicates directly with OpenAI.")
-                                    .font(.body)
-                                .foregroundColor(.secondary)
-                            }
-
-                            Button("Get API Key from OpenAI") {
-                                if let url = URL(string: "https://platform.openai.com/api-keys") {
-                                    NSWorkspace.shared.open(url)
-                                }
-                            }
-                            .buttonStyle(.link)
-
-                            SecureField("OpenAI API Key", text: $apiKey)
-                                .textFieldStyle(.roundedBorder)
-                                .font(.body)
-
-                            HStack {
-                                Image(systemName: "info.circle")
-                                    .foregroundColor(.blue)
-                                Text("Stored locally and encrypted in Keychain.")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -138,7 +105,6 @@ struct OnboardingView: View {
                             Spacer()
                             Button("Get Started") {
                                 // Complete onboarding
-                                settingsViewModel.settings.openAIKey = apiKey
                                 settingsViewModel.completeOnboarding()
                             }
                             .buttonStyle(.borderedProminent)
@@ -162,8 +128,6 @@ struct OnboardingView: View {
         }
         .onAppear {
             checkPermissions()
-            settingsViewModel.loadAPIKey()
-            apiKey = settingsViewModel.settings.openAIKey
             hasAcceptedTerms = settingsViewModel.settings.hasAcceptedTerms
         }
         .onChange(of: audioRecordingPermission.status) { oldValue, newValue in
@@ -177,10 +141,17 @@ struct OnboardingView: View {
     }
 
     private var canProceed: Bool {
+        let isAuthenticated: Bool
+        if case .authenticated = convexService.authState {
+            isAuthenticated = true
+        } else {
+            isAuthenticated = false
+        }
+        
         return micPermissionGranted &&
                systemAudioPermissionGranted &&
-               !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-               hasAcceptedTerms
+               hasAcceptedTerms &&
+               isAuthenticated
     }
 
     private func checkPermissions() {

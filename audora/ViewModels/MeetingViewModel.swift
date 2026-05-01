@@ -223,7 +223,11 @@ class MeetingViewModel: ObservableObject {
         }
 
         isStartingRecording = true
-        recordingSessionManager.startRecording(for: meeting.id)
+        recordingSessionManager.startRecording(
+            for: meeting.id,
+            title: meeting.title.isEmpty ? nil : meeting.title,
+            calendarEventId: meeting.calendarEventId
+        )
     }
 
     func stopRecording() {

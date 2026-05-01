@@ -15,9 +15,12 @@ import Clerk
 @main
 struct AudoraApp: App {
     private let updaterController: SPUStandardUpdaterController
+    private let learningWordServiceProvider = LearningWordServiceProvider()
     @StateObject private var settingsViewModel = SettingsViewModel()
     @StateObject private var menuBarViewModel = MenuBarViewModel()
     @StateObject private var convexService = ConvexService.shared
+    @StateObject private var writingAwarenessManager = WritingAwarenessManager.shared
+    @StateObject private var systemWideWritingMonitor = SystemWideWritingMonitor.shared
 
     init() {
         updaterController = SPUStandardUpdaterController(updaterDelegate: nil, userDriverDelegate: nil)
@@ -64,6 +67,18 @@ struct AudoraApp: App {
 
         // Initialize managers
         _ = NotificationManager.shared
+        _ = WritingAwarenessManager.shared
+        _ = LearningTargetHUDWindowManager.shared
+        _ = WritingLensWindowManager.shared
+        _ = WritingCoachWindowManager.shared
+        _ = WritingIssuePopoverWindowManager.shared
+        _ = SystemWideUnderlineOverlayManager.shared
+        _ = GlobalHotKeyManager.shared
+        NSApplication.shared.servicesProvider = learningWordServiceProvider
+        NSUpdateDynamicServices()
+        if UserDefaultsManager.shared.writingAwarenessEnabled {
+            SystemWideWritingMonitor.shared.start()
+        }
     }
 
     var body: some Scene {
@@ -114,6 +129,9 @@ struct AudoraApp: App {
         .handlesExternalEvents(matching: ["main-window"])
         .windowResizability(.contentSize)
         .defaultSize(width: 1000, height: 600)
+        .commands {
+            WritingCommands()
+        }
 
         SwiftUI.Settings {
             SettingsView(viewModel: settingsViewModel)
@@ -128,10 +146,51 @@ struct AudoraApp: App {
             }
             .keyboardShortcut("n", modifiers: .command)
 
+            if UserDefaultsManager.shared.showWritingSummaryInMenuBar {
+                Divider()
+
+                Text("Writing Awareness")
+                    .font(.headline)
+
+                Text(writingAwarenessManager.currentSummary.summaryText)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                if systemWideWritingMonitor.isRunning {
+                    Text("Live coach is watching the focused text field")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+
+                if !writingAwarenessManager.focusPack.targetWords.isEmpty {
+                    Text("Today: \(writingAwarenessManager.focusPack.targetWords.prefix(3).joined(separator: " · "))")
+                        .font(.caption)
+                }
+
+                if let bannedWord = writingAwarenessManager.focusPack.bannedTerms.first {
+                    Text("Ban: \(bannedWord)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Button("Add Selection to Learning Words") {
+                    WritingAwarenessManager.shared.captureSelectionAsLearningTarget()
+                }
+
+                Button("Open Writing Lens") {
+                    WritingLensWindowManager.shared.show(captureSelection: true)
+                }
+
+                Button("Open Writing Workspace") {
+                    NotificationCenter.default.post(name: .openWritingWorkspace, object: nil)
+                    NSApp.showMainWindow()
+                }
+            }
+
             Divider()
 
             if let nextEvent = menuBarViewModel.nextEvent {
-                Text("Next: \(nextEvent.title)")
+                Text("Next: \(nextEvent.title ?? "Untitled")")
                 Text(nextEvent.startDate, style: .relative)
                 Divider()
             }
@@ -162,10 +221,32 @@ struct AudoraApp: App {
                     Image(systemName: "bolt.fill")
                     Text(nextEvent.title)
                 }
+            } else if UserDefaultsManager.shared.showWritingSummaryInMenuBar,
+                      let leadWord = writingAwarenessManager.focusPack.targetWords.first {
+                HStack {
+                    Image(systemName: "text.viewfinder")
+                    Text(leadWord)
+                }
             } else {
                 Image(systemName: "bolt.fill")
             }
         })
+    }
+}
+
+struct WritingCommands: Commands {
+    var body: some Commands {
+        CommandMenu("Writing") {
+            Button("Add Selection to Learning Words") {
+                WritingAwarenessManager.shared.captureSelectionAsLearningTarget()
+            }
+            .keyboardShortcut("l", modifiers: [.command, .option, .control])
+
+            Button("Open Writing Lens") {
+                WritingLensWindowManager.shared.show(captureSelection: true)
+            }
+            .keyboardShortcut("l", modifiers: [.command, .shift])
+        }
     }
 }
 
