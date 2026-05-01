@@ -1,9 +1,11 @@
+import AppKit
 import SwiftUI
 
 enum SettingsTab: String, CaseIterable, Identifiable {
     case general = "General"
     case calendar = "Calendar"
     case notifications = "Notifications"
+    case writing = "Writing"
     case ai = "AI Settings"
 
     var id: String { rawValue }
@@ -13,6 +15,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .general: return "gear"
         case .calendar: return "calendar"
         case .notifications: return "bell"
+        case .writing: return "text.redaction"
         case .ai: return "sparkles"
         }
     }
@@ -87,6 +90,8 @@ struct SettingsView: View {
                         CalendarSettingsView(viewModel: viewModel)
                     case .notifications:
                         NotificationSettingsView(viewModel: viewModel)
+                    case .writing:
+                        WritingSettingsView(viewModel: viewModel)
                     case .ai:
                         AISettingsView(viewModel: viewModel, navigationPath: $navigationPath)
                     }
@@ -435,6 +440,211 @@ struct NotificationSettingsView: View {
     }
 }
 
+struct WritingSettingsView: View {
+    @ObservedObject var viewModel: SettingsViewModel
+    @ObservedObject private var writingAwarenessManager = WritingAwarenessManager.shared
+    @ObservedObject private var systemWideWritingMonitor = SystemWideWritingMonitor.shared
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            Text("Writing Awareness")
+                .font(.title2)
+                .fontWeight(.semibold)
+
+            VStack(alignment: .leading, spacing: 0) {
+                ToggleRow(
+                    title: "Enable writing awareness",
+                    description: "Turn on the personalized vocabulary and repair workflow inside the macOS app.",
+                    isOn: $viewModel.settings.writingAwarenessEnabled
+                )
+                .onChange(of: viewModel.settings.writingAwarenessEnabled) { _, enabled in
+                    if enabled {
+                        systemWideWritingMonitor.start()
+                    } else {
+                        systemWideWritingMonitor.stop()
+                    }
+                }
+
+                Divider()
+                    .padding(.leading, 16)
+
+                ToggleRow(
+                    title: "Subtle vocabulary rewards",
+                    description: "Show quiet positive reinforcement when active target words appear naturally.",
+                    isOn: $viewModel.settings.subtleVocabularyRewardsEnabled
+                )
+
+                Divider()
+                    .padding(.leading, 16)
+
+                ToggleRow(
+                    title: "Show writing summary in menu bar",
+                    description: "Add today’s preload words and progress summary to the menu bar extra.",
+                    isOn: $viewModel.settings.showWritingSummaryInMenuBar
+                )
+
+                Divider()
+                    .padding(.leading, 16)
+
+                ToggleRow(
+                    title: "Allow clipboard fallback",
+                    description: "If the learning-word shortcut or Writing Lens selection capture fails, pull text from the clipboard instead.",
+                    isOn: $viewModel.settings.writingLensClipboardFallbackEnabled
+                )
+            }
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color(NSColor.separatorColor), lineWidth: 1)
+            )
+
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Live Capture")
+                    .font(.headline)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Checklist")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                    Text("1. Grant Accessibility. 2. Grant Input Monitoring. 3. Leave Live Coach running. 4. Expect overlay-only guidance in apps that do not expose safe replacement APIs.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(writingAwarenessManager.isAccessibilityTrusted ? "Accessibility access is enabled." : "Accessibility access is required for selected-text capture.")
+                            .font(.body)
+                            .fontWeight(.medium)
+                        Text("Use the Services menu item `Add to Learning Words` when apps expose it. Use `Control` + `Option` + `Command` + `L` to save the current selection from anywhere, or `Cmd` + `Shift` + `L` to open Writing Lens.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    Button(writingAwarenessManager.isAccessibilityTrusted ? "Refresh Status" : "Grant Access") {
+                        if writingAwarenessManager.isAccessibilityTrusted {
+                            writingAwarenessManager.refreshPermissionTrust()
+                        } else {
+                            writingAwarenessManager.requestAccessibilityAccess()
+                        }
+                    }
+                }
+
+                Divider()
+
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(writingAwarenessManager.isInputMonitoringTrusted ? "Input Monitoring is enabled." : "Input Monitoring is required for live updates while you type in other apps.")
+                            .font(.body)
+                            .fontWeight(.medium)
+                        Text("This is the permission that lets the live coach refresh when keys are pressed outside Audora.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    Button(writingAwarenessManager.isInputMonitoringTrusted ? "Open Settings" : "Grant Access") {
+                        if writingAwarenessManager.isInputMonitoringTrusted {
+                            writingAwarenessManager.openInputMonitoringSettings()
+                        } else {
+                            writingAwarenessManager.requestInputMonitoringAccess()
+                        }
+                    }
+                }
+
+                Divider()
+
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Current focus")
+                            .font(.body)
+                            .fontWeight(.medium)
+                        Text(writingAwarenessManager.focusPack.targetWords.joined(separator: ", "))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text("Focused field mode: \(writingAwarenessManager.liveCapability.shortLabel)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text(writingAwarenessManager.liveCapability.explanation)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text("To verify Obsidian support, place the caret inside a note, type or click once so Live Coach sees it, then return here and copy the last observed focus diagnostics.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        if let lastObservedExternalFocusApp = writingAwarenessManager.lastObservedExternalFocusApp {
+                            Text("Last observed external focus: \(lastObservedExternalFocusApp)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    Spacer()
+                    VStack(alignment: .trailing, spacing: 8) {
+                        Button("Copy Focus Diagnostics") {
+                            writingAwarenessManager.copyFocusedElementDiagnostics()
+                        }
+                        Button("Add Selection to Learning Words") {
+                            writingAwarenessManager.captureSelectionAsLearningTarget()
+                        }
+                        Button("Open Writing Lens") {
+                            WritingLensWindowManager.shared.show(captureSelection: true)
+                        }
+                        Button(systemWideWritingMonitor.isRunning ? "Pause Live Coach" : "Resume Live Coach") {
+                            if systemWideWritingMonitor.isRunning {
+                                systemWideWritingMonitor.stop()
+                            } else {
+                                systemWideWritingMonitor.start()
+                            }
+                        }
+                    }
+                }
+
+                if let focusDiagnosticsMessage = writingAwarenessManager.focusDiagnosticsMessage {
+                    Text(focusDiagnosticsMessage)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Inline adapters")
+                        .font(.body)
+                        .fontWeight(.medium)
+
+                    ForEach(WritingAdapterKind.allCases) { adapter in
+                        let status = writingAwarenessManager.adapterStatus(for: adapter)
+                        HStack(alignment: .top) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(adapter.title)
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                Text(status.explanation)
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            Text(status.shortLabel)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+
+                    Text("Shared writing storage: \(writingAwarenessManager.sharedWritingStoragePath)")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color(NSColor.separatorColor), lineWidth: 1)
+            )
+        }
+    }
+}
+
 struct AISettingsView: View {
     @ObservedObject var viewModel: SettingsViewModel
     @Binding var navigationPath: NavigationPath
@@ -495,11 +705,16 @@ struct AISettingsView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
 
-                TextEditor(text: $viewModel.settings.userBlurb)
-                    .scrollContentBackground(.hidden)
-                    .padding(8)
-                    .background(Color(NSColor.textBackgroundColor))
-                    .cornerRadius(8)
+                WritingAwareTextView(
+                    text: $viewModel.settings.userBlurb,
+                    surfaceID: "settings-user-blurb",
+                    placeholder: "Your role, company, context, and what matters in meetings.",
+                    contextLabel: "User Context",
+                    minHeight: 100,
+                    backgroundColor: .textBackgroundColor,
+                    borderColor: .clear,
+                    cornerRadius: 8
+                )
                     .frame(minHeight: 100)
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
@@ -526,11 +741,16 @@ struct AISettingsView: View {
                     .font(.caption)
                 }
 
-                TextEditor(text: $viewModel.settings.systemPrompt)
-                    .scrollContentBackground(.hidden)
-                    .padding(8)
-                    .background(Color(NSColor.textBackgroundColor))
-                    .cornerRadius(8)
+                WritingAwareTextView(
+                    text: $viewModel.settings.systemPrompt,
+                    surfaceID: "settings-system-prompt",
+                    placeholder: "System prompt",
+                    contextLabel: "System Prompt",
+                    minHeight: 150,
+                    backgroundColor: .textBackgroundColor,
+                    borderColor: .clear,
+                    cornerRadius: 8
+                )
                     .frame(minHeight: 150)
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)

@@ -1,6 +1,7 @@
 // SignInView.swift
 // Authentication view for Clerk sign-in
 
+import AppKit
 import SwiftUI
 import AuthenticationServices
 import Clerk
@@ -84,12 +85,17 @@ struct SignInView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
 
-                    TextField("you@example.com", text: $email)
-                        .textFieldStyle(.plain)
-                        .padding(12)
-                        .background(Color.secondary.opacity(0.1))
-                        .cornerRadius(8)
-                        .textContentType(.emailAddress)
+                    WritingAwareTextField(
+                        text: $email,
+                        surfaceID: "sign-in-email",
+                        placeholder: "you@example.com",
+                        contextLabel: "Sign In Email",
+                        backgroundColor: NSColor.controlBackgroundColor.withAlphaComponent(0.72),
+                        borderColor: NSColor.clear,
+                        cornerRadius: 8,
+                        textInsets: NSSize(width: 12, height: 9)
+                    )
+                    .frame(height: 42)
                 }
 
                 // Password field

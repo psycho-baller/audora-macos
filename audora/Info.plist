@@ -4,6 +4,8 @@
 <dict>
 	<key>NSAudioCaptureUsageDescription</key>
 	<string>Audora captures audio for transcription. The mic following feature records only when other apps are using the microphone.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Audora uses the microphone for optional voice memos attached to writing repairs.</string>
 	<key>SUEnableInstallerLauncherService</key>
 	<true/>
 	<key>SUFeedURL</key>
@@ -14,7 +16,26 @@
 	<string>$(CLERK_PUBLISHABLE_KEY)</string>
 	<key>CONVEX_DEPLOYMENT_URL</key>
 	<string>$(CONVEX_DEPLOYMENT_URL)</string>
-		<key>CFBundleURLTypes</key>
+	<key>NSServices</key>
+	<array>
+		<dict>
+			<key>NSMenuItem</key>
+			<dict>
+				<key>default</key>
+				<string>Add to Learning Words</string>
+			</dict>
+			<key>NSMessage</key>
+			<string>addToLearningWords</string>
+			<key>NSPortName</key>
+			<string>$(PRODUCT_NAME)</string>
+			<key>NSSendTypes</key>
+			<array>
+				<string>NSStringPboardType</string>
+				<string>public.utf8-plain-text</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>

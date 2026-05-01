@@ -1,9 +1,11 @@
+import AppKit
 import SwiftUI
 
 struct MeetingListView: View {
     @StateObject private var viewModel = MeetingListViewModel()
     @ObservedObject var settingsViewModel: SettingsViewModel
     @StateObject private var recordingSessionManager = RecordingSessionManager.shared
+    @ObservedObject private var writingAwarenessManager = WritingAwarenessManager.shared
     @State private var selectedMeeting: Meeting?
     @State private var navigationPath = NavigationPath()
     @Binding var triggerNewRecording: Bool
@@ -44,6 +46,12 @@ struct MeetingListView: View {
             // Open settings window when triggered from menu bar
             openSettings()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .openWritingWorkspace)) { _ in
+            openWritingWorkspace()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openLearningTargetEditor)) { _ in
+            openWritingWorkspace()
+        }
     }
 
     private var sidebarContent: some View {
@@ -51,12 +59,66 @@ struct MeetingListView: View {
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
-                TextField("Search meetings...", text: $viewModel.searchText)
-                    .textFieldStyle(.plain)
+                WritingAwareTextField(
+                    text: $viewModel.searchText,
+                    surfaceID: "meeting-list-search",
+                    placeholder: "Search meetings...",
+                    contextLabel: "Meeting Search",
+                    backgroundColor: .clear,
+                    borderColor: .clear,
+                    cornerRadius: 0,
+                    textInsets: NSSize(width: 0, height: 0)
+                )
+                .frame(height: 20)
             }
             .padding(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
 
             Divider()
+
+            Button {
+                openWritingWorkspace()
+            } label: {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Writing Awareness")
+                                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            Text(writingAwarenessManager.currentSummary.summaryText)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "text.viewfinder")
+                            .foregroundStyle(.secondary)
+                    }
+
+                    HStack(spacing: 6) {
+                        ForEach(writingAwarenessManager.focusPack.targetWords.prefix(3), id: \.self) { word in
+                            Text(word)
+                                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 5)
+                                .background(
+                                    Capsule(style: .continuous)
+                                        .fill(Color.accentColor.opacity(0.12))
+                                )
+                        }
+                        Spacer(minLength: 0)
+                    }
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color(NSColor.controlBackgroundColor))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(Color.accentColor.opacity(0.14), lineWidth: 1)
+                )
+                .padding(.horizontal, 12)
+                .padding(.top, 10)
+            }
+            .buttonStyle(.plain)
 
             Spacer().frame(height: 12) // Add space before list content
 
@@ -153,6 +215,13 @@ struct MeetingListView: View {
 
 
                     Button {
+                        openWritingWorkspace()
+                    } label: {
+                        Image(systemName: "text.viewfinder")
+                    }
+                    .help("Writing Awareness")
+
+                    Button {
                         openSettings()
                     } label: {
                         Image(systemName: "gearshape")
@@ -172,6 +241,8 @@ struct MeetingListView: View {
             .navigationDestination(for: String.self) { path in
                 if path == "templates" {
                     TemplateListView()
+                } else if path == "writing-awareness" {
+                    WritingAwarenessDashboardView()
                 }
             }
         }
@@ -200,6 +271,12 @@ struct MeetingListView: View {
 
             return DayGroup(day: dayString, date: date, meetings: meetings.sorted { $0.date > $1.date })
         }.sorted { $0.date > $1.date }
+    }
+
+    private func openWritingWorkspace() {
+        navigationPath = NavigationPath()
+        navigationPath.append("writing-awareness")
+        selectedMeeting = nil
     }
 }
 
@@ -535,10 +612,18 @@ struct MeetingDetailContentView: View {
         VStack(alignment: .leading, spacing: 12) {
             // Title and Menu
             HStack {
-                TextField("Meeting Title", text: $viewModel.meeting.title)
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .textFieldStyle(.plain)
+                WritingAwareTextField(
+                    text: $viewModel.meeting.title,
+                    surfaceID: "meeting-title",
+                    placeholder: "Meeting Title",
+                    contextLabel: "Meeting Title",
+                    font: .systemFont(ofSize: 28, weight: .semibold),
+                    backgroundColor: .clear,
+                    borderColor: .clear,
+                    cornerRadius: 0,
+                    textInsets: NSSize(width: 0, height: 0)
+                )
+                .frame(height: 34)
 
                 Spacer()
 

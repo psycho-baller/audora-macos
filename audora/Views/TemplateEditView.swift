@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct TemplateEditView: View {
@@ -19,8 +20,13 @@ struct TemplateEditView: View {
                         .font(.headline)
                         .foregroundColor(.primary)
                     
-                    TextField("Template Name", text: $template.title)
-                        .textFieldStyle(.roundedBorder)
+                    WritingAwareTextField(
+                        text: $template.title,
+                        surfaceID: "template-title",
+                        placeholder: "Template Name",
+                        contextLabel: "Template Name"
+                    )
+                    .frame(height: 36)
                 }
                 
                 // Context
@@ -33,11 +39,16 @@ struct TemplateEditView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    TextEditor(text: $template.context)
-                        .scrollContentBackground(.hidden)
-                        .padding(8)
-                        .background(Color.gray.opacity(0.05))
-                        .cornerRadius(8)
+                    WritingAwareTextView(
+                        text: $template.context,
+                        surfaceID: "template-context",
+                        placeholder: "Meeting context",
+                        contextLabel: "Template Context",
+                        minHeight: 100,
+                        backgroundColor: .textBackgroundColor,
+                        borderColor: .clear,
+                        cornerRadius: 8
+                    )
                         .frame(minHeight: 100)
                         .overlay(
                             RoundedRectangle(cornerRadius: 8)
@@ -81,14 +92,24 @@ struct TemplateEditView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
                                 VStack(alignment: .leading, spacing: 8) {
-                                    TextField("Section Title", text: $template.sections[index].title)
-                                        .textFieldStyle(.roundedBorder)
-                                    
-                                    TextEditor(text: $template.sections[index].description)
-                                        .scrollContentBackground(.hidden)
-                                        .padding(8)
-                                        .background(Color.gray.opacity(0.05))
-                                        .cornerRadius(8)
+                                    WritingAwareTextField(
+                                        text: $template.sections[index].title,
+                                        surfaceID: "template-section-title-\(index)",
+                                        placeholder: "Section Title",
+                                        contextLabel: "Template Section Title"
+                                    )
+                                    .frame(height: 36)
+
+                                    WritingAwareTextView(
+                                        text: $template.sections[index].description,
+                                        surfaceID: "template-section-description-\(index)",
+                                        placeholder: "Description",
+                                        contextLabel: "Template Section Description",
+                                        minHeight: 60,
+                                        backgroundColor: .textBackgroundColor,
+                                        borderColor: .clear,
+                                        cornerRadius: 8
+                                    )
                                         .frame(minHeight: 60)
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 8)

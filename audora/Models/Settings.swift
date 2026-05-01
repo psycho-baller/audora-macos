@@ -79,6 +79,26 @@ struct Settings: Codable {
         set { UserDefaultsManager.shared.realtimeFeedbackEnabled = newValue }
     }
 
+    var writingAwarenessEnabled: Bool {
+        get { UserDefaultsManager.shared.writingAwarenessEnabled }
+        set { UserDefaultsManager.shared.writingAwarenessEnabled = newValue }
+    }
+
+    var subtleVocabularyRewardsEnabled: Bool {
+        get { UserDefaultsManager.shared.subtleVocabularyRewardsEnabled }
+        set { UserDefaultsManager.shared.subtleVocabularyRewardsEnabled = newValue }
+    }
+
+    var showWritingSummaryInMenuBar: Bool {
+        get { UserDefaultsManager.shared.showWritingSummaryInMenuBar }
+        set { UserDefaultsManager.shared.showWritingSummaryInMenuBar = newValue }
+    }
+
+    var writingLensClipboardFallbackEnabled: Bool {
+        get { UserDefaultsManager.shared.writingLensClipboardFallbackEnabled }
+        set { UserDefaultsManager.shared.writingLensClipboardFallbackEnabled = newValue }
+    }
+
 
     // System prompt default loading
     static func defaultSystemPrompt() -> String {

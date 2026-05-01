@@ -15,15 +15,31 @@
 		CCC33F812E236B6F00EDE382 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = CCC33F802E236B6F00EDE382 /* PostHog */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		D0A000000000000000000107 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CC5718102E201D8D0042BA88 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CC5718172E201D8D0042BA88;
+			remoteInfo = audora;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		25E42AB52F1249FB00067344 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 		CC5718182E201D8D0042BA88 /* audora.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = audora.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D0A000000000000000000101 /* audoraTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = audoraTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		CC57181A2E201D8D0042BA88 /* audora */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = audora;
+			sourceTree = "<group>";
+		};
+		D0A000000000000000000102 /* audoraTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = audoraTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -41,6 +57,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D0A000000000000000000103 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -48,6 +71,7 @@
 			isa = PBXGroup;
 			children = (
 				CC57181A2E201D8D0042BA88 /* audora */,
+				D0A000000000000000000102 /* audoraTests */,
 				CC7816BF2E22093900101A90 /* Frameworks */,
 				CC5718192E201D8D0042BA88 /* Products */,
 				25E42AB52F1249FB00067344 /* Config.xcconfig */,
@@ -58,6 +82,7 @@
 			isa = PBXGroup;
 			children = (
 				CC5718182E201D8D0042BA88 /* audora.app */,
+				D0A000000000000000000101 /* audoraTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -99,6 +124,29 @@
 			productReference = CC5718182E201D8D0042BA88 /* audora.app */;
 			productType = "com.apple.product-type.application";
 		};
+		D0A000000000000000000104 /* audoraTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D0A00000000000000000010B /* Build configuration list for PBXNativeTarget "audoraTests" */;
+			buildPhases = (
+				D0A000000000000000000106 /* Sources */,
+				D0A000000000000000000103 /* Frameworks */,
+				D0A000000000000000000105 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D0A000000000000000000108 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				D0A000000000000000000102 /* audoraTests */,
+			);
+			name = audoraTests;
+			packageProductDependencies = (
+			);
+			productName = audoraTests;
+			productReference = D0A000000000000000000101 /* audoraTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -111,6 +159,10 @@
 				TargetAttributes = {
 					CC5718172E201D8D0042BA88 = {
 						CreatedOnToolsVersion = 16.0;
+					};
+					D0A000000000000000000104 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = CC5718172E201D8D0042BA88;
 					};
 				};
 			};
@@ -136,6 +188,7 @@
 			projectRoot = "";
 			targets = (
 				CC5718172E201D8D0042BA88 /* audora */,
+				D0A000000000000000000104 /* audoraTests */,
 			);
 		};
 /* End PBXProject section */
@@ -149,6 +202,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D0A000000000000000000105 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -159,7 +219,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D0A000000000000000000106 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D0A000000000000000000108 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CC5718172E201D8D0042BA88 /* audora */;
+			targetProxy = D0A000000000000000000107 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		CC5718252E201D8E0042BA88 /* Debug */ = {
@@ -357,6 +432,42 @@
 			};
 			name = Release;
 		};
+		D0A000000000000000000109 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3V2UU7RRK9;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 0.0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = studio.orbitlabs.audoraTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/audora.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/audora";
+			};
+			name = Debug;
+		};
+		D0A00000000000000000010A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3V2UU7RRK9;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 0.0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = studio.orbitlabs.audoraTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/audora.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/audora";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -374,6 +485,15 @@
 			buildConfigurations = (
 				CC5718282E201D8E0042BA88 /* Debug */,
 				CC5718292E201D8E0042BA88 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D0A00000000000000000010B /* Build configuration list for PBXNativeTarget "audoraTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D0A000000000000000000109 /* Debug */,
+				D0A00000000000000000010A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
